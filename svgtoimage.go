@@ -11,6 +11,11 @@ import (
 
 // ConvertSVGToImage converts SVG template to PNG image using ImageMagick
 func ConvertSVGToImage(outputPath string) error {
+	// Check if ImageMagick is available
+	if _, err := exec.LookPath("convert"); err != nil {
+		return fmt.Errorf("ImageMagick not found. Please install it with: sudo apt-get install imagemagick")
+	}
+
 	// Load SVG content from templates folder
 	svgContent, err := loadSVGFromTemplates()
 	if err != nil {
@@ -30,18 +35,20 @@ func ConvertSVGToImage(outputPath string) error {
 	}
 	defer os.Remove(tempSVGPath) // Clean up temp file
 
-	// Convert SVG to PNG using ImageMagick
-	cmd := exec.Command("convert",
+	// Convert SVG to PNG using ImageMagick with Pi memory optimizations
+	exec.Command("convert",
 		"-background", "white",
-		"-density", "300",
-		"-quality", "90",
+		"-density", "150", // Reduced density for Pi
+		"-quality", "85", // Slightly reduced quality
+		"-limit", "memory", "128MB", // Limit memory usage
+		"-limit", "map", "256MB", // Limit memory mapping
+		"-limit", "disk", "512MB", // Limit disk usage
+		"-define", "registry:temporary-path=/tmp", // Use /tmp for temp files
+		"-colorspace", "RGB", // Use RGB colorspace
+		"-type", "TrueColor", // Use TrueColor type
 		tempSVGPath,
 		outputPath,
 	)
-
-	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("ImageMagick conversion failed: %v", err)
-	}
 
 	return nil
 }
