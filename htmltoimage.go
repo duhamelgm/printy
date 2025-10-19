@@ -45,9 +45,9 @@ func getOrCreateChromeInstance() (context.Context, error) {
 		}
 	}
 
-	// Create new Chrome instance with increased timeout
-	ctx, cancel := context.WithTimeout(context.Background(), BrowserTimeout)
-	defer cancel()
+	// Create new Chrome instance with increased timeout for Pi
+	ctx, _ := context.WithTimeout(context.Background(), BrowserTimeout)
+	// Don't defer cancel here - let the Chrome instance manage its own lifecycle
 
 	// Get Chrome data directory relative to executable
 	chromeDataDir, err := GetExecutableRelativePath("tmp/chrome-data")
@@ -95,6 +95,10 @@ func getOrCreateChromeInstance() (context.Context, error) {
 		chromedp.Flag("disable-logging", true),                        // Disable logging
 		chromedp.Flag("silent", true),                                 // Silent mode
 		chromedp.Flag("disable-default-browser-check", true),          // Disable default browser check
+		chromedp.Flag("disable-crash-reporter", true),                 // Disable crash reporter
+		chromedp.Flag("disable-in-process-stack-traces", true),        // Disable stack traces
+		chromedp.Flag("log-level", "3"),                               // Set log level to fatal only
+		chromedp.Flag("disable-breakpad", true),                       // Disable breakpad
 		chromedp.UserDataDir(chromeDataDir),                           // Unique data directory
 	)
 
@@ -133,26 +137,41 @@ func ConvertHTMLToImage(outputPath string) error {
 	}
 
 	// Get or create Chrome instance
-	ctx, err := getOrCreateChromeInstance()
+	_, err = getOrCreateChromeInstance()
 	if err != nil {
 		return fmt.Errorf("failed to get Chrome instance: %v", err)
 	}
 
 	// Create a context with timeout specifically for screenshot operations
-	screenshotCtx, cancel := context.WithTimeout(ctx, ScreenshotTimeout)
+	// Use a longer timeout to prevent premature cancellation on Pi
+	screenshotCtx, cancel := context.WithTimeout(context.Background(), ScreenshotTimeout)
 	defer cancel()
 
-	// Capture full page screenshot with optimized settings
+	// Capture full page screenshot with retry mechanism for Pi stability
 	var buf []byte
-	err = chromedp.Run(screenshotCtx,
-		chromedp.Navigate("data:text/html,"+htmlContent),
-		chromedp.WaitVisible("body", chromedp.ByQuery),
-		chromedp.Sleep(3*time.Second), // Increased wait time for Pi's slower hardware
-		chromedp.FullScreenshot(&buf, ImageQuality),
-	)
+	maxRetries := 3
+	for attempt := 1; attempt <= maxRetries; attempt++ {
+		err = chromedp.Run(screenshotCtx,
+			chromedp.Navigate("data:text/html,"+htmlContent),
+			chromedp.WaitVisible("body", chromedp.ByQuery),
+			chromedp.Sleep(3*time.Second), // Increased wait time for Pi's slower hardware
+			chromedp.FullScreenshot(&buf, ImageQuality),
+		)
+
+		if err == nil {
+			break // Success, exit retry loop
+		}
+
+		if attempt < maxRetries {
+			// Wait a bit before retrying on Pi
+			time.Sleep(2 * time.Second)
+			// Create a new context for retry
+			screenshotCtx, _ = context.WithTimeout(context.Background(), ScreenshotTimeout)
+		}
+	}
 
 	if err != nil {
-		return fmt.Errorf("ChromeDP screenshot failed: %v", err)
+		return fmt.Errorf("ChromeDP screenshot failed after %d attempts: %v", maxRetries, err)
 	}
 
 	// Write the image to file
