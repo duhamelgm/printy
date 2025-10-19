@@ -171,16 +171,6 @@ func (s *Server) handlePrintBacklog(w http.ResponseWriter, r *http.Request) {
 			log.Printf("⚠️  Warning: Failed to record print for ticket %d: %v", ticket.ID, err)
 		}
 
-		// Wait for printer to become idle before next job (except for last ticket)
-		if i < len(relevantTickets)-1 {
-			log.Printf("⏳ Waiting for printer to become idle before next job...")
-			if err := s.printer.WaitForPrinterIdle(30 * time.Second); err != nil {
-				log.Printf("⚠️  Warning: Timeout waiting for printer idle: %v", err)
-				log.Printf("🔄 Proceeding with next job anyway...")
-			} else {
-				log.Printf("✅ Printer is idle, proceeding with next job")
-			}
-		}
 	}
 
 	// Success response
