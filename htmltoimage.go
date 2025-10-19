@@ -46,6 +46,12 @@ func getOrCreateChromeInstance() (context.Context, error) {
 	// Create new Chrome instance
 	ctx, _ := context.WithTimeout(context.Background(), ImageTimeout)
 
+	// Get Chrome data directory relative to executable
+	chromeDataDir, err := GetExecutableRelativePath("tmp/chrome-data")
+	if err != nil {
+		return nil, fmt.Errorf("failed to get Chrome data directory: %v", err)
+	}
+
 	// Create ChromeDP context with unique user data dir
 	opts := append(chromedp.DefaultExecAllocatorOptions[:],
 		chromedp.Flag("headless", true),
@@ -54,7 +60,7 @@ func getOrCreateChromeInstance() (context.Context, error) {
 		chromedp.Flag("disable-dev-shm-usage", true),
 		chromedp.Flag("disable-web-security", true),
 		chromedp.Flag("disable-features", "VizDisplayCompositor"),
-		chromedp.UserDataDir("./tmp/chrome-data"), // Unique data directory
+		chromedp.UserDataDir(chromeDataDir), // Unique data directory
 	)
 
 	allocCtx, _ := chromedp.NewExecAllocator(ctx, opts...)
@@ -120,8 +126,12 @@ func ConvertHTMLToImage(outputPath string) error {
 
 // loadHTMLFromTemplates loads HTML content from the templates folder
 func loadHTMLFromTemplates() (string, error) {
-	// Try to read from template file
-	templatePath := "templates/sample.html"
+	// Get template path relative to executable directory
+	templatePath, err := GetExecutableRelativePath("templates/sample.html")
+	if err != nil {
+		return "", fmt.Errorf("failed to get template path: %v", err)
+	}
+
 	content, err := os.ReadFile(templatePath)
 	if err != nil {
 		return "", fmt.Errorf("failed to read template file %s: %v", templatePath, err)

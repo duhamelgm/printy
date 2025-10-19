@@ -9,7 +9,13 @@ import (
 func main() {
 	// Configuration
 	printerName := os.Getenv("PRINTER_NAME")
-	outputDir := os.Getenv("OUTPUT_DIR")
+
+	// Get output directory relative to executable
+	outputDir, err := GetExecutableRelativePath("tmp/printy")
+	if err != nil {
+		fmt.Printf("Error getting output directory: %v\n", err)
+		return
+	}
 
 	// Create output directory
 	if err := os.MkdirAll(outputDir, 0755); err != nil {
