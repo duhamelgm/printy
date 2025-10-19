@@ -97,6 +97,19 @@ func getOrCreateChromeInstance() error {
 	return nil
 }
 
+// CloseChromeInstance closes the global Chrome instance
+func CloseChromeInstance() {
+	chromeMutex.Lock()
+	defer chromeMutex.Unlock()
+
+	if chromeCancel != nil {
+		chromeCancel()
+		chromeCancel = nil
+	}
+	chromeCtx = nil
+	chromeReady = false
+}
+
 // ConvertHTMLToImage converts HTML from templates folder to an image using ChromeDP
 func ConvertHTMLToImage(outputPath string) error {
 	// Load HTML content from templates folder
