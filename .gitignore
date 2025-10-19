@@ -4,8 +4,6 @@
 *.dll
 *.so
 *.dylib
-printy
-printy.exe
 
 # Test binary, built with `go test -c`
 *.test
@@ -72,4 +70,3 @@ yarn-error.log*
 # Build artifacts
 build/
 dist/
-printy
