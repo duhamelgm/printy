@@ -38,9 +38,6 @@ func (ip *ImagePrinter) PrintImage(imagePath string, printerName string) error {
 		return fmt.Errorf("failed to create stdin pipe: %v", err)
 	}
 
-	// Print header text
-	stdin.Write([]byte("Printing image from: " + imagePath + "\n\n"))
-
 	// Load the image
 	imageFile, err := os.Open(imagePath)
 	if err != nil {
@@ -50,17 +47,12 @@ func (ip *ImagePrinter) PrintImage(imagePath string, printerName string) error {
 	defer imageFile.Close()
 
 	// Decode the image (supports PNG, JPEG, GIF)
-	img, imgFormat, err := image.Decode(imageFile)
+	img, _, err := image.Decode(imageFile)
 	if err != nil {
 		stdin.Close()
 		return fmt.Errorf("failed to decode image: %v", err)
 	}
 
-	fmt.Printf("   📊 Loaded image, format: %s\n", imgFormat)
-	fmt.Printf("   📊 Image dimensions: %dx%d pixels\n", img.Bounds().Dx(), img.Bounds().Dy())
-
-	// Invert colors for thermal printing (black background -> white background)
-	fmt.Println("   🔄 Inverting colors for thermal printing...")
 	img = invertColors(img)
 
 	// Create a wrapper to make stdin compatible with io.ReadWriter
@@ -83,15 +75,10 @@ func (ip *ImagePrinter) PrintImage(imagePath string, printerName string) error {
 		Threshold: 0.5, // Black/white threshold
 	}
 
-	fmt.Println("   🔄 Converting and printing image...")
-
 	// Print the image using the raster converter
 	rasterConv.Print(img, ep)
 
 	// Add some spacing and cut
-	ep.Linefeed()
-	ep.Linefeed()
-	ep.Write([]byte("Print job completed"))
 	ep.Linefeed()
 	ep.Cut()
 	ep.End()
@@ -102,7 +89,6 @@ func (ip *ImagePrinter) PrintImage(imagePath string, printerName string) error {
 		return fmt.Errorf("lp command failed: %v", err)
 	}
 
-	fmt.Println("   ✅ Print job completed successfully")
 	return nil
 }
 
