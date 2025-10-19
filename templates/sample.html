@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kanban Ticket</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @page {
+            size: auto;
+            margin: 0;
+        }
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+        }
+        .ticket-border {
+            border: 6px solid #000;
+            border-top: 8px solid #000;
+        }
+        .ticket-header {
+            border-bottom: 4px solid #000;
+        }
+    </style>
+</head>
+<body class="bg-white">
+    <div class="max-w-5xl mx-auto p-4 mt-0">
+        <!-- Kanban Ticket -->
+        <div class="ticket-border bg-white">
+            <!-- Ticket Header -->
+            <div class="ticket-header bg-gray-100 p-6">
+                <div class="flex justify-between items-center">
+                    <div>
+                        <h1 class="text-9xl font-bold text-black mb-4">BUG-1234</h1>
+                        <p class="text-6xl text-gray-700">Fix login authentication issue</p>
+                    </div>
+                    <div class="text-right">
+                        <div class="text-4xl font-bold text-black mb-2">HIGH</div>
+                        <div class="text-3xl text-gray-600">Priority</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Ticket Content -->
+            <div class="p-8">
+                <!-- Description Section -->
+                <div class="mb-8">
+                    <h2 class="text-8xl font-bold text-black mb-6">Description</h2>
+                    <div class="bg-gray-50 p-8 border-3 border-gray-300">
+                        <p class="text-5xl text-black leading-relaxed">
+                            Users are experiencing authentication failures when attempting to log in with valid credentials. 
+                            The login form accepts the credentials but fails to authenticate against the database. 
+                            This affects all user types and occurs consistently across different browsers.
+                        </p>
+                    </div>
+                </div>
+                
+                <!-- Details Section -->
+                <div class="mb-8">
+                    <h2 class="text-8xl font-bold text-black mb-6">Details</h2>
+                    <div class="grid grid-cols-2 gap-8">
+                        <div class="bg-gray-50 p-6 border-3 border-gray-300">
+                            <h3 class="text-4xl font-bold text-black mb-3">Assignee</h3>
+                            <p class="text-4xl text-gray-700">John Developer</p>
+                        </div>
+                        <div class="bg-gray-50 p-6 border-3 border-gray-300">
+                            <h3 class="text-4xl font-bold text-black mb-3">Reporter</h3>
+                            <p class="text-4xl text-gray-700">Jane Tester</p>
+                        </div>
+                        <div class="bg-gray-50 p-6 border-3 border-gray-300">
+                            <h3 class="text-4xl font-bold text-black mb-3">Component</h3>
+                            <p class="text-4xl text-gray-700">Authentication</p>
+                        </div>
+                        <div class="bg-gray-50 p-6 border-3 border-gray-300">
+                            <h3 class="text-4xl font-bold text-black mb-3">Labels</h3>
+                            <p class="text-4xl text-gray-700">bug, critical</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Steps to Reproduce -->
+                <div class="mb-8">
+                    <h2 class="text-8xl font-bold text-black mb-6">Steps to Reproduce</h2>
+                    <div class="bg-gray-50 p-8 border-3 border-gray-300">
+                        <ol class="text-4xl text-black space-y-4">
+                            <li class="flex"><span class="font-bold mr-6 text-5xl">1.</span>Navigate to login page</li>
+                            <li class="flex"><span class="font-bold mr-6 text-5xl">2.</span>Enter valid username and password</li>
+                            <li class="flex"><span class="font-bold mr-6 text-5xl">3.</span>Click "Login" button</li>
+                            <li class="flex"><span class="font-bold mr-6 text-5xl">4.</span>Observe authentication failure</li>
+                        </ol>
+                    </div>
+                </div>
+                
+                <!-- Acceptance Criteria -->
+                <div class="mb-8">
+                    <h2 class="text-8xl font-bold text-black mb-6">Acceptance Criteria</h2>
+                    <div class="bg-gray-50 p-8 border-3 border-gray-300">
+                        <ul class="text-4xl text-black space-y-4">
+                            <li class="flex"><span class="font-bold mr-6 text-5xl">✓</span>Valid credentials should authenticate successfully</li>
+                            <li class="flex"><span class="font-bold mr-6 text-5xl">✓</span>Invalid credentials should show error message</li>
+                            <li class="flex"><span class="font-bold mr-6 text-5xl">✓</span>User should be redirected to dashboard after login</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Ticket Footer -->
+            <div class="bg-gray-100 p-6 border-t-4 border-black">
+                <div class="flex justify-between items-center">
+                    <div class="text-3xl text-gray-600">
+                        Created: {{.Timestamp}}
+                    </div>
+                    <div class="text-3xl text-gray-600">
+                        Status: IN PROGRESS
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
