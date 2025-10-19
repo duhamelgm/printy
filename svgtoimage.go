@@ -36,7 +36,7 @@ func ConvertSVGToImage(outputPath string) error {
 	defer os.Remove(tempSVGPath) // Clean up temp file
 
 	// Convert SVG to PNG using ImageMagick with Pi memory optimizations
-	exec.Command("convert",
+	cmd := exec.Command("convert",
 		"-background", "white",
 		"-density", "150", // Reduced density for Pi
 		"-quality", "85", // Slightly reduced quality
@@ -49,6 +49,10 @@ func ConvertSVGToImage(outputPath string) error {
 		tempSVGPath,
 		outputPath,
 	)
+
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("ImageMagick conversion failed: %v", err)
+	}
 
 	return nil
 }
