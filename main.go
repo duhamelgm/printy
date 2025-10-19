@@ -18,8 +18,12 @@ func main() {
 	if err != nil {
 		log.Fatalf("Failed to create server: %v", err)
 	}
+	defer s.Close() // Ensure database connection is closed
 
 	fmt.Printf("🚀 Starting Printy HTTP Server on port %s\n", *port)
+	fmt.Printf("📋 Set PRINTER_NAME environment variable to specify printer\n")
+	fmt.Printf("📊 Set DB_PATH environment variable to specify database location\n")
+	fmt.Printf("🌐 Server will be available at: http://localhost:%s\n", *port)
 
 	// Start server (this blocks)
 	if err := s.Start(); err != nil {
