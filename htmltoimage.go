@@ -13,9 +13,11 @@ import (
 
 // Image conversion options - defined in the file
 const (
-	ImageQuality = 90
-	ImageFormat  = "png"
-	ImageTimeout = 30 * time.Second
+	ImageQuality      = 90
+	ImageFormat       = "png"
+	ImageTimeout      = 30 * time.Second
+	BrowserTimeout    = 90 * time.Second // Increased timeout for slower Pi hardware
+	ScreenshotTimeout = 60 * time.Second // Separate timeout for screenshot operations on Pi
 )
 
 // Global Chrome instance for reuse
@@ -43,8 +45,9 @@ func getOrCreateChromeInstance() (context.Context, error) {
 		}
 	}
 
-	// Create new Chrome instance
-	ctx, _ := context.WithTimeout(context.Background(), ImageTimeout)
+	// Create new Chrome instance with increased timeout
+	ctx, cancel := context.WithTimeout(context.Background(), BrowserTimeout)
+	defer cancel()
 
 	// Get Chrome data directory relative to executable
 	chromeDataDir, err := GetExecutableRelativePath("tmp/chrome-data")
@@ -52,7 +55,7 @@ func getOrCreateChromeInstance() (context.Context, error) {
 		return nil, fmt.Errorf("failed to get Chrome data directory: %v", err)
 	}
 
-	// Create ChromeDP context with unique user data dir
+	// Create ChromeDP context optimized for Raspberry Pi with 512MB RAM
 	opts := append(chromedp.DefaultExecAllocatorOptions[:],
 		chromedp.Flag("headless", true),
 		chromedp.Flag("disable-gpu", true),
@@ -60,7 +63,39 @@ func getOrCreateChromeInstance() (context.Context, error) {
 		chromedp.Flag("disable-dev-shm-usage", true),
 		chromedp.Flag("disable-web-security", true),
 		chromedp.Flag("disable-features", "VizDisplayCompositor"),
-		chromedp.UserDataDir(chromeDataDir), // Unique data directory
+		// Keep CSS enabled but disable JavaScript for Pi performance
+		chromedp.Flag("disable-javascript", true),                                 // Keep JavaScript disabled for performance
+		chromedp.Flag("disable-plugins", true),                                    // Disable plugins
+		chromedp.Flag("disable-extensions", true),                                 // Disable extensions
+		chromedp.Flag("disable-background-timer-throttling", true),                // Disable background throttling
+		chromedp.Flag("disable-backgrounding-occluded-windows", true),             // Disable backgrounding
+		chromedp.Flag("disable-renderer-backgrounding", true),                     // Disable renderer backgrounding
+		chromedp.Flag("disable-background-networking", true),                      // Disable background networking
+		chromedp.Flag("disable-default-apps", true),                               // Disable default apps
+		chromedp.Flag("disable-sync", true),                                       // Disable sync
+		chromedp.Flag("disable-translate", true),                                  // Disable translate
+		chromedp.Flag("disable-ipc-flooding-protection", true),                    // Disable IPC flooding protection
+		chromedp.Flag("disable-hang-monitor", true),                               // Disable hang monitor
+		chromedp.Flag("disable-prompt-on-repost", true),                           // Disable prompt on repost
+		chromedp.Flag("disable-domain-reliability", true),                         // Disable domain reliability
+		chromedp.Flag("disable-component-extensions-with-background-pages", true), // Disable component extensions
+		chromedp.Flag("aggressive-cache-discard", true),                           // Aggressive cache discard
+		chromedp.Flag("memory-pressure-off", true),                                // Turn off memory pressure
+		// Pi-specific memory optimizations
+		chromedp.Flag("max_old_space_size", "256"),                    // Reduced memory limit for Pi (256MB)
+		chromedp.Flag("single-process", true),                         // Single process mode for Pi
+		chromedp.Flag("disable-software-rasterizer", true),            // Disable software rasterizer
+		chromedp.Flag("disable-threaded-compositing", true),           // Disable threaded compositing
+		chromedp.Flag("disable-threaded-animation", true),             // Disable threaded animation
+		chromedp.Flag("disable-checker-imaging", true),                // Disable checker imaging
+		chromedp.Flag("disable-new-tab-first-run", true),              // Disable new tab first run
+		chromedp.Flag("disable-client-side-phishing-detection", true), // Disable phishing detection
+		chromedp.Flag("disable-component-update", true),               // Disable component updates
+		chromedp.Flag("disable-background-mode", true),                // Disable background mode
+		chromedp.Flag("disable-logging", true),                        // Disable logging
+		chromedp.Flag("silent", true),                                 // Silent mode
+		chromedp.Flag("disable-default-browser-check", true),          // Disable default browser check
+		chromedp.UserDataDir(chromeDataDir),                           // Unique data directory
 	)
 
 	allocCtx, _ := chromedp.NewExecAllocator(ctx, opts...)
@@ -103,12 +138,16 @@ func ConvertHTMLToImage(outputPath string) error {
 		return fmt.Errorf("failed to get Chrome instance: %v", err)
 	}
 
-	// Capture full page screenshot
+	// Create a context with timeout specifically for screenshot operations
+	screenshotCtx, cancel := context.WithTimeout(ctx, ScreenshotTimeout)
+	defer cancel()
+
+	// Capture full page screenshot with optimized settings
 	var buf []byte
-	err = chromedp.Run(ctx,
+	err = chromedp.Run(screenshotCtx,
 		chromedp.Navigate("data:text/html,"+htmlContent),
 		chromedp.WaitVisible("body", chromedp.ByQuery),
-		chromedp.Sleep(1*time.Second), // Wait for any dynamic content
+		chromedp.Sleep(3*time.Second), // Increased wait time for Pi's slower hardware
 		chromedp.FullScreenshot(&buf, ImageQuality),
 	)
 
