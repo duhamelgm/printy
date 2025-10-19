@@ -29,30 +29,18 @@ var (
 )
 
 // getOrCreateChromeInstance gets the existing Chrome instance or creates a new one
-func getOrCreateChromeInstance() (context.Context, error) {
+func getOrCreateChromeInstance() error {
 	chromeMutex.Lock()
 	defer chromeMutex.Unlock()
 
-	if chromeReady && chromeCtx != nil {
-		// Check if context is still valid
-		select {
-		case <-chromeCtx.Done():
-			// Context is cancelled, need to recreate
-			chromeReady = false
-		default:
-			// Context is still valid, reuse it
-			return chromeCtx, nil
-		}
+	if chromeReady {
+		return nil // Chrome instance is ready
 	}
-
-	// Create new Chrome instance with increased timeout for Pi
-	ctx, _ := context.WithTimeout(context.Background(), BrowserTimeout)
-	// Don't defer cancel here - let the Chrome instance manage its own lifecycle
 
 	// Get Chrome data directory relative to executable
 	chromeDataDir, err := GetExecutableRelativePath("tmp/chrome-data")
 	if err != nil {
-		return nil, fmt.Errorf("failed to get Chrome data directory: %v", err)
+		return fmt.Errorf("failed to get Chrome data directory: %v", err)
 	}
 
 	// Create ChromeDP context optimized for Raspberry Pi with 512MB RAM
@@ -102,24 +90,11 @@ func getOrCreateChromeInstance() (context.Context, error) {
 		chromedp.UserDataDir(chromeDataDir),                           // Unique data directory
 	)
 
-	allocCtx, _ := chromedp.NewExecAllocator(ctx, opts...)
+	allocCtx, _ := chromedp.NewExecAllocator(context.Background(), opts...)
 	chromeCtx, chromeCancel = chromedp.NewContext(allocCtx)
 
 	chromeReady = true
-	return chromeCtx, nil
-}
-
-// CloseChromeInstance closes the global Chrome instance
-func CloseChromeInstance() {
-	chromeMutex.Lock()
-	defer chromeMutex.Unlock()
-
-	if chromeCancel != nil {
-		chromeCancel()
-		chromeCancel = nil
-	}
-	chromeCtx = nil
-	chromeReady = false
+	return nil
 }
 
 // ConvertHTMLToImage converts HTML from templates folder to an image using ChromeDP
@@ -137,21 +112,16 @@ func ConvertHTMLToImage(outputPath string) error {
 	}
 
 	// Get or create Chrome instance
-	_, err = getOrCreateChromeInstance()
+	err = getOrCreateChromeInstance()
 	if err != nil {
 		return fmt.Errorf("failed to get Chrome instance: %v", err)
 	}
-
-	// Create a context with timeout specifically for screenshot operations
-	// Use a longer timeout to prevent premature cancellation on Pi
-	screenshotCtx, cancel := context.WithTimeout(context.Background(), ScreenshotTimeout)
-	defer cancel()
 
 	// Capture full page screenshot with retry mechanism for Pi stability
 	var buf []byte
 	maxRetries := 3
 	for attempt := 1; attempt <= maxRetries; attempt++ {
-		err = chromedp.Run(screenshotCtx,
+		err = chromedp.Run(chromeCtx,
 			chromedp.Navigate("data:text/html,"+htmlContent),
 			chromedp.WaitVisible("body", chromedp.ByQuery),
 			chromedp.Sleep(3*time.Second), // Increased wait time for Pi's slower hardware
@@ -165,8 +135,6 @@ func ConvertHTMLToImage(outputPath string) error {
 		if attempt < maxRetries {
 			// Wait a bit before retrying on Pi
 			time.Sleep(2 * time.Second)
-			// Create a new context for retry
-			screenshotCtx, _ = context.WithTimeout(context.Background(), ScreenshotTimeout)
 		}
 	}
 
