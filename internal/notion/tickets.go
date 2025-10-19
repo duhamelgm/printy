@@ -13,6 +13,7 @@ type TicketItem struct {
 	Priority string
 	Weekdays string
 	Name     string
+	Assignee string
 }
 
 // GetTickets fetches items from Notion database and formats them
@@ -49,7 +50,13 @@ func GetTickets(apiKey, databaseID string) ([]TicketItem, error) {
 		if idProp, ok := properties["id"].(map[string]interface{}); ok {
 			if uniqueID, ok := idProp["unique_id"].(map[string]interface{}); ok {
 				if number, ok := uniqueID["number"].(float64); ok {
-					ticket.ID = fmt.Sprintf("%.0f", number)
+					// Get the prefix from Notion's unique_id
+					if prefix, ok := uniqueID["prefix"].(string); ok {
+						ticket.ID = fmt.Sprintf("%s%.0f", prefix, number)
+					} else {
+						// Fallback if no prefix is provided
+						ticket.ID = fmt.Sprintf("%.0f", number)
+					}
 				}
 			}
 		}
@@ -98,6 +105,17 @@ func GetTickets(apiKey, databaseID string) ([]TicketItem, error) {
 				if titleObj, ok := title[0].(map[string]interface{}); ok {
 					if plainText, ok := titleObj["plain_text"].(string); ok {
 						ticket.Name = plainText
+					}
+				}
+			}
+		}
+
+		// Extract assignee (people)
+		if assigneeProp, ok := properties["assignee"].(map[string]interface{}); ok {
+			if people, ok := assigneeProp["people"].([]interface{}); ok && len(people) > 0 {
+				if person, ok := people[0].(map[string]interface{}); ok {
+					if name, ok := person["name"].(string); ok {
+						ticket.Assignee = name
 					}
 				}
 			}

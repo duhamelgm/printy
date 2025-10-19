@@ -10,14 +10,14 @@ import (
 )
 
 // ConvertSVGToImage converts SVG template to JPEG image using rsvg-convert
-func ConvertSVGToImage(outputPath string, ticketID, title string) error {
+func ConvertSVGToImage(outputPath string, ticketID, title, assignee string) error {
 	// Check if rsvg-convert is available
 	if _, err := exec.LookPath("rsvg-convert"); err != nil {
 		return fmt.Errorf("rsvg-convert not found. Please install it with: sudo apt-get install librsvg2-bin")
 	}
 
 	// Load SVG content from templates folder
-	svgContent, err := loadSVGFromTemplates(ticketID, title)
+	svgContent, err := loadSVGFromTemplates(ticketID, title, assignee)
 	if err != nil {
 		return fmt.Errorf("failed to load SVG from templates: %v", err)
 	}
@@ -52,7 +52,7 @@ func ConvertSVGToImage(outputPath string, ticketID, title string) error {
 }
 
 // loadSVGFromTemplates loads SVG content from the templates folder
-func loadSVGFromTemplates(ticketID, title string) (string, error) {
+func loadSVGFromTemplates(ticketID, title, assignee string) (string, error) {
 	// Get template path relative to executable directory
 	templatePath, err := GetExecutableRelativePath("templates/sample.svg")
 	if err != nil {
@@ -70,6 +70,7 @@ func loadSVGFromTemplates(ticketID, title string) (string, error) {
 	svgContent = strings.ReplaceAll(svgContent, "{{.Timestamp}}", timestamp)
 	svgContent = strings.ReplaceAll(svgContent, "{{.TicketID}}", ticketID)
 	svgContent = strings.ReplaceAll(svgContent, "{{.Title}}", title)
+	svgContent = strings.ReplaceAll(svgContent, "{{.Assignee}}", assignee)
 
 	return svgContent, nil
 }

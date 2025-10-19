@@ -9,10 +9,10 @@ import (
 // CreateTicket creates a new ticket
 func (d *Database) CreateTicket(ticket *Ticket) error {
 	query := `
-		INSERT INTO tickets (ref_id, title, priority, cooldown, weekdays, created_at, updated_at)
-		VALUES (?, ?, ?, ?, ?, ?, ?)`
+		INSERT INTO tickets (ref_id, title, priority, cooldown, weekdays, assignee, created_at, updated_at)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
 
-	result, err := d.db.Exec(query, ticket.RefID, ticket.Title, ticket.Priority, ticket.Cooldown, ticket.Weekdays, ticket.CreatedAt, ticket.UpdatedAt)
+	result, err := d.db.Exec(query, ticket.RefID, ticket.Title, ticket.Priority, ticket.Cooldown, ticket.Weekdays, ticket.Assignee, ticket.CreatedAt, ticket.UpdatedAt)
 	if err != nil {
 		return fmt.Errorf("failed to create ticket: %v", err)
 	}
@@ -28,12 +28,12 @@ func (d *Database) CreateTicket(ticket *Ticket) error {
 
 // GetTicketByID retrieves a ticket by ID
 func (d *Database) GetTicketByID(id int) (*Ticket, error) {
-	query := `SELECT id, ref_id, title, priority, cooldown, weekdays, created_at, updated_at FROM tickets WHERE id = ?`
+	query := `SELECT id, ref_id, title, priority, cooldown, weekdays, assignee, created_at, updated_at FROM tickets WHERE id = ?`
 
 	ticket := &Ticket{}
 	err := d.db.QueryRow(query, id).Scan(
 		&ticket.ID, &ticket.RefID, &ticket.Title, &ticket.Priority,
-		&ticket.Cooldown, &ticket.Weekdays, &ticket.CreatedAt, &ticket.UpdatedAt,
+		&ticket.Cooldown, &ticket.Weekdays, &ticket.Assignee, &ticket.CreatedAt, &ticket.UpdatedAt,
 	)
 
 	if err != nil {
@@ -48,12 +48,12 @@ func (d *Database) GetTicketByID(id int) (*Ticket, error) {
 
 // GetTicketByRefID retrieves a ticket by reference ID
 func (d *Database) GetTicketByRefID(refID string) (*Ticket, error) {
-	query := `SELECT id, ref_id, title, priority, cooldown, weekdays, created_at, updated_at FROM tickets WHERE ref_id = ?`
+	query := `SELECT id, ref_id, title, priority, cooldown, weekdays, assignee, created_at, updated_at FROM tickets WHERE ref_id = ?`
 
 	ticket := &Ticket{}
 	err := d.db.QueryRow(query, refID).Scan(
 		&ticket.ID, &ticket.RefID, &ticket.Title, &ticket.Priority,
-		&ticket.Cooldown, &ticket.Weekdays, &ticket.CreatedAt, &ticket.UpdatedAt,
+		&ticket.Cooldown, &ticket.Weekdays, &ticket.Assignee, &ticket.CreatedAt, &ticket.UpdatedAt,
 	)
 
 	if err != nil {
@@ -68,7 +68,7 @@ func (d *Database) GetTicketByRefID(refID string) (*Ticket, error) {
 
 // GetAllTickets retrieves all tickets
 func (d *Database) GetAllTickets() ([]Ticket, error) {
-	query := `SELECT id, ref_id, title, priority, cooldown, weekdays, created_at, updated_at FROM tickets ORDER BY created_at DESC`
+	query := `SELECT id, ref_id, title, priority, cooldown, weekdays, assignee, created_at, updated_at FROM tickets ORDER BY created_at DESC`
 
 	rows, err := d.db.Query(query)
 	if err != nil {
@@ -81,7 +81,7 @@ func (d *Database) GetAllTickets() ([]Ticket, error) {
 		var ticket Ticket
 		err := rows.Scan(
 			&ticket.ID, &ticket.RefID, &ticket.Title, &ticket.Priority,
-			&ticket.Cooldown, &ticket.Weekdays, &ticket.CreatedAt, &ticket.UpdatedAt,
+			&ticket.Cooldown, &ticket.Weekdays, &ticket.Assignee, &ticket.CreatedAt, &ticket.UpdatedAt,
 		)
 		if err != nil {
 			return nil, fmt.Errorf("failed to scan ticket: %v", err)
@@ -96,10 +96,10 @@ func (d *Database) GetAllTickets() ([]Ticket, error) {
 func (d *Database) UpdateTicket(ticket *Ticket) error {
 	query := `
 		UPDATE tickets 
-		SET ref_id = ?, title = ?, priority = ?, cooldown = ?, weekdays = ?, updated_at = ?
+		SET ref_id = ?, title = ?, priority = ?, cooldown = ?, weekdays = ?, assignee = ?, updated_at = ?
 		WHERE id = ?`
 
-	result, err := d.db.Exec(query, ticket.RefID, ticket.Title, ticket.Priority, ticket.Cooldown, ticket.Weekdays, ticket.UpdatedAt, ticket.ID)
+	result, err := d.db.Exec(query, ticket.RefID, ticket.Title, ticket.Priority, ticket.Cooldown, ticket.Weekdays, ticket.Assignee, ticket.UpdatedAt, ticket.ID)
 	if err != nil {
 		return fmt.Errorf("failed to update ticket: %v", err)
 	}
@@ -139,7 +139,7 @@ func (d *Database) DeleteTicket(id int) error {
 
 // GetTicketsByPriority retrieves tickets by priority level
 func (d *Database) GetTicketsByPriority(priority int) ([]Ticket, error) {
-	query := `SELECT id, ref_id, title, priority, cooldown, weekdays, created_at, updated_at FROM tickets WHERE priority = ? ORDER BY created_at DESC`
+	query := `SELECT id, ref_id, title, priority, cooldown, weekdays, assignee, created_at, updated_at FROM tickets WHERE priority = ? ORDER BY created_at DESC`
 
 	rows, err := d.db.Query(query, priority)
 	if err != nil {
@@ -152,7 +152,7 @@ func (d *Database) GetTicketsByPriority(priority int) ([]Ticket, error) {
 		var ticket Ticket
 		err := rows.Scan(
 			&ticket.ID, &ticket.RefID, &ticket.Title, &ticket.Priority,
-			&ticket.Cooldown, &ticket.Weekdays, &ticket.CreatedAt, &ticket.UpdatedAt,
+			&ticket.Cooldown, &ticket.Weekdays, &ticket.Assignee, &ticket.CreatedAt, &ticket.UpdatedAt,
 		)
 		if err != nil {
 			return nil, fmt.Errorf("failed to scan ticket: %v", err)

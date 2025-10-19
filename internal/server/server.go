@@ -86,6 +86,8 @@ func (s *Server) Start() error {
 	mux.HandleFunc("/print/", s.handlePrint) // Handle trailing slash
 	mux.HandleFunc("/sync-tickets", s.handleSyncTickets)
 	mux.HandleFunc("/sync-tickets/", s.handleSyncTickets) // Handle trailing slash
+	mux.HandleFunc("/clear-prints", s.handleClearPrints)
+	mux.HandleFunc("/clear-prints/", s.handleClearPrints) // Handle trailing slash
 
 	server := &http.Server{
 		Addr:         ":" + s.port,
@@ -121,7 +123,7 @@ func (s *Server) handlePrint(w http.ResponseWriter, r *http.Request) {
 
 	// Print each relevant ticket
 	for _, ticket := range relevantTickets {
-		if err := s.printer.Print(ticket.RefID, ticket.Title); err != nil {
+		if err := s.printer.Print(ticket.RefID, ticket.Title, ticket.Assignee); err != nil {
 			log.Printf("Failed to print ticket %d: %v", ticket.ID, err)
 			continue
 		}
@@ -207,6 +209,7 @@ func (s *Server) handleSyncTickets(w http.ResponseWriter, r *http.Request) {
 			existingTicket.Priority = priority
 			existingTicket.Cooldown = cooldown
 			existingTicket.Weekdays = weekdays
+			existingTicket.Assignee = notionTicket.Assignee
 			existingTicket.UpdatedAt = now
 
 			if err := s.database.UpdateTicket(existingTicket); err != nil {
@@ -221,6 +224,7 @@ func (s *Server) handleSyncTickets(w http.ResponseWriter, r *http.Request) {
 				Priority:  priority,
 				Cooldown:  cooldown,
 				Weekdays:  weekdays,
+				Assignee:  notionTicket.Assignee,
 				CreatedAt: now,
 				UpdatedAt: now,
 			}
@@ -239,6 +243,37 @@ func (s *Server) handleSyncTickets(w http.ResponseWriter, r *http.Request) {
 		Success: true,
 		Message: fmt.Sprintf("Successfully synced %d tickets from Notion", syncedCount),
 		Count:   syncedCount,
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(response)
+}
+
+// handleClearPrints handles clear prints requests
+func (s *Server) handleClearPrints(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	// Delete all prints
+	if err := s.database.DeleteAllPrints(); err != nil {
+		response := PrintResponse{
+			Success: false,
+			Message: "Failed to clear prints",
+			Error:   err.Error(),
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(response)
+		return
+	}
+
+	// Success response
+	response := PrintResponse{
+		Success: true,
+		Message: "All prints cleared successfully",
 	}
 
 	w.Header().Set("Content-Type", "application/json")

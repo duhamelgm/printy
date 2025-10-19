@@ -13,6 +13,7 @@ type Ticket struct {
 	Priority  int       `json:"priority" db:"priority"`
 	Cooldown  int       `json:"cooldown" db:"cooldown"` // Cooldown in seconds
 	Weekdays  string    `json:"weekdays" db:"weekdays"` // Weekdays as JSON array string (e.g., ["WeekEnd", "WeekDay"])
+	Assignee  string    `json:"assignee" db:"assignee"` // Assignee name from Notion user
 	CreatedAt time.Time `json:"created_at" db:"created_at"`
 	UpdatedAt time.Time `json:"updated_at" db:"updated_at"`
 }

@@ -32,12 +32,12 @@ func New(printerName string) (*Printer, error) {
 }
 
 // Print executes the complete printing workflow
-func (p *Printer) Print(ticketID, title string) error {
+func (p *Printer) Print(ticketID, title, assignee string) error {
 	// File path for PNG (faster conversion with rsvg-convert)
 	pngPath := filepath.Join(p.outputDir, "output.png")
 
 	fmt.Println("🔄 Converting SVG to PNG...")
-	if err := ConvertSVGToImage(pngPath, ticketID, title); err != nil {
+	if err := ConvertSVGToImage(pngPath, ticketID, title, assignee); err != nil {
 		return fmt.Errorf("error converting SVG to PNG: %v", err)
 	}
 

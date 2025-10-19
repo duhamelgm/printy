@@ -212,3 +212,15 @@ func (d *Database) DeletePrint(id int) error {
 
 	return nil
 }
+
+// DeleteAllPrints deletes all prints from the database
+func (d *Database) DeleteAllPrints() error {
+	query := `DELETE FROM prints`
+
+	_, err := d.db.Exec(query)
+	if err != nil {
+		return fmt.Errorf("failed to delete all prints: %v", err)
+	}
+
+	return nil
+}

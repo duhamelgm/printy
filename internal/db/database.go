@@ -61,6 +61,7 @@ func (d *Database) initSchema() error {
 		priority INTEGER NOT NULL DEFAULT 0,
 		cooldown INTEGER NOT NULL DEFAULT 0,
 		weekdays TEXT NOT NULL DEFAULT '',
+		assignee TEXT NOT NULL DEFAULT '',
 		created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
 		updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 	);`
@@ -72,6 +73,10 @@ func (d *Database) initSchema() error {
 	// Add weekdays column if it doesn't exist (migration)
 	alterSQL := `ALTER TABLE tickets ADD COLUMN weekdays TEXT DEFAULT '';`
 	d.db.Exec(alterSQL) // Ignore error if column already exists
+
+	// Add assignee column if it doesn't exist (migration)
+	alterAssigneeSQL := `ALTER TABLE tickets ADD COLUMN assignee TEXT DEFAULT '';`
+	d.db.Exec(alterAssigneeSQL) // Ignore error if column already exists
 
 	// Create prints table
 	printsSQL := `
