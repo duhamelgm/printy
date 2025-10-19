@@ -224,3 +224,15 @@ func (d *Database) DeleteAllPrints() error {
 
 	return nil
 }
+
+// DeleteAllTickets deletes all tickets from the database
+func (d *Database) DeleteAllTickets() error {
+	query := `DELETE FROM tickets`
+
+	_, err := d.db.Exec(query)
+	if err != nil {
+		return fmt.Errorf("failed to delete all tickets: %v", err)
+	}
+
+	return nil
+}

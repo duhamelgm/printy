@@ -22,11 +22,6 @@ type Server struct {
 	port     string
 }
 
-// PrintRequest represents the request body for printing
-type PrintRequest struct {
-	PrinterName string `json:"printer_name,omitempty"`
-}
-
 // PrintResponse represents the response for printing
 type PrintResponse struct {
 	Success bool   `json:"success"`
@@ -84,10 +79,14 @@ func (s *Server) Start() error {
 	// Register handlers
 	mux.HandleFunc("/print", s.handlePrint)
 	mux.HandleFunc("/print/", s.handlePrint) // Handle trailing slash
+	mux.HandleFunc("/print-backlog", s.handlePrintBacklog)
+	mux.HandleFunc("/print-backlog/", s.handlePrintBacklog) // Handle trailing slash
 	mux.HandleFunc("/sync-tickets", s.handleSyncTickets)
 	mux.HandleFunc("/sync-tickets/", s.handleSyncTickets) // Handle trailing slash
 	mux.HandleFunc("/clear-prints", s.handleClearPrints)
 	mux.HandleFunc("/clear-prints/", s.handleClearPrints) // Handle trailing slash
+	mux.HandleFunc("/clear-tickets", s.handleClearTickets)
+	mux.HandleFunc("/clear-tickets/", s.handleClearTickets) // Handle trailing slash
 
 	server := &http.Server{
 		Addr:         ":" + s.port,
@@ -100,8 +99,8 @@ func (s *Server) Start() error {
 	return server.ListenAndServe()
 }
 
-// handlePrint handles print requests
-func (s *Server) handlePrint(w http.ResponseWriter, r *http.Request) {
+// handlePrintBacklog handles print backlog requests
+func (s *Server) handlePrintBacklog(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
@@ -143,6 +142,57 @@ func (s *Server) handlePrint(w http.ResponseWriter, r *http.Request) {
 	response := PrintResponse{
 		Success: true,
 		Message: fmt.Sprintf("Print job completed successfully for %d tickets", len(relevantTickets)),
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(response)
+}
+
+// PrintRequest represents a print request with title and assignee
+type PrintRequest struct {
+	Title    string `json:"title"`
+	Assignee string `json:"assignee"`
+}
+
+// handlePrint handles direct print requests with JSON body
+func (s *Server) handlePrint(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	// Parse JSON request body
+	var printReq PrintRequest
+	if err := json.NewDecoder(r.Body).Decode(&printReq); err != nil {
+		response := PrintResponse{
+			Success: false,
+			Message: "Invalid JSON body",
+			Error:   err.Error(),
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(response)
+		return
+	}
+
+	// Print with empty ref_id, title, and assignee from request
+	if err := s.printer.Print("", printReq.Title, printReq.Assignee); err != nil {
+		response := PrintResponse{
+			Success: false,
+			Message: "Print job failed",
+			Error:   err.Error(),
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(response)
+		return
+	}
+
+	// Success response
+	response := PrintResponse{
+		Success: true,
+		Message: "Print job completed successfully",
 	}
 
 	w.Header().Set("Content-Type", "application/json")
@@ -274,6 +324,37 @@ func (s *Server) handleClearPrints(w http.ResponseWriter, r *http.Request) {
 	response := PrintResponse{
 		Success: true,
 		Message: "All prints cleared successfully",
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(response)
+}
+
+// handleClearTickets handles clear tickets requests
+func (s *Server) handleClearTickets(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	// Delete all tickets
+	if err := s.database.DeleteAllTickets(); err != nil {
+		response := PrintResponse{
+			Success: false,
+			Message: "Failed to clear tickets",
+			Error:   err.Error(),
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(response)
+		return
+	}
+
+	// Success response
+	response := PrintResponse{
+		Success: true,
+		Message: "All tickets cleared successfully",
 	}
 
 	w.Header().Set("Content-Type", "application/json")

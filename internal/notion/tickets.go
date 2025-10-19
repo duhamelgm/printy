@@ -110,12 +110,16 @@ func GetTickets(apiKey, databaseID string) ([]TicketItem, error) {
 			}
 		}
 
-		// Extract assignee (people)
+		// Extract assignee (people) - save only first name
 		if assigneeProp, ok := properties["assignee"].(map[string]interface{}); ok {
 			if people, ok := assigneeProp["people"].([]interface{}); ok && len(people) > 0 {
 				if person, ok := people[0].(map[string]interface{}); ok {
 					if name, ok := person["name"].(string); ok {
-						ticket.Assignee = name
+						// Extract only the first name
+						parts := strings.Fields(name)
+						if len(parts) > 0 {
+							ticket.Assignee = parts[0]
+						}
 					}
 				}
 			}
