@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"image"
+	"image/color"
 	"io"
 	"os"
 	"os/exec"
@@ -58,6 +59,10 @@ func (ip *ImagePrinter) PrintImage(imagePath string, printerName string) error {
 	fmt.Printf("   📊 Loaded image, format: %s\n", imgFormat)
 	fmt.Printf("   📊 Image dimensions: %dx%d pixels\n", img.Bounds().Dx(), img.Bounds().Dy())
 
+	// Invert colors for thermal printing (black background -> white background)
+	fmt.Println("   🔄 Inverting colors for thermal printing...")
+	img = invertColors(img)
+
 	// Create a wrapper to make stdin compatible with io.ReadWriter
 	readWriter := &readWriterWrapper{writer: stdin}
 
@@ -74,7 +79,7 @@ func (ip *ImagePrinter) PrintImage(imagePath string, printerName string) error {
 
 	// Create raster converter with Pi Zero 2W optimizations
 	rasterConv := &raster.Converter{
-		MaxWidth:  384, // Standard thermal printer width
+		MaxWidth:  512, // Standard thermal printer width
 		Threshold: 0.5, // Black/white threshold
 	}
 
@@ -99,6 +104,30 @@ func (ip *ImagePrinter) PrintImage(imagePath string, printerName string) error {
 
 	fmt.Println("   ✅ Print job completed successfully")
 	return nil
+}
+
+// invertColors inverts the colors of an image for thermal printing
+func invertColors(img image.Image) image.Image {
+	bounds := img.Bounds()
+	inverted := image.NewRGBA(bounds)
+
+	for y := bounds.Min.Y; y < bounds.Max.Y; y++ {
+		for x := bounds.Min.X; x < bounds.Max.X; x++ {
+			originalColor := img.At(x, y)
+			r, g, b, a := originalColor.RGBA()
+
+			// Invert RGB values (255 - value)
+			invertedColor := color.RGBA{
+				R: 255 - uint8(r>>8),
+				G: 255 - uint8(g>>8),
+				B: 255 - uint8(b>>8),
+				A: uint8(a >> 8),
+			}
+			inverted.Set(x, y, invertedColor)
+		}
+	}
+
+	return inverted
 }
 
 // readWriterWrapper makes io.WriteCloser compatible with io.ReadWriter
