@@ -9,11 +9,11 @@ import (
 	"time"
 )
 
-// ConvertSVGToImage converts SVG template to JPEG image using ImageMagick
+// ConvertSVGToImage converts SVG template to JPEG image using rsvg-convert
 func ConvertSVGToImage(outputPath string) error {
-	// Check if ImageMagick is available
-	if _, err := exec.LookPath("convert"); err != nil {
-		return fmt.Errorf("ImageMagick not found. Please install it with: sudo apt-get install imagemagick")
+	// Check if rsvg-convert is available
+	if _, err := exec.LookPath("rsvg-convert"); err != nil {
+		return fmt.Errorf("rsvg-convert not found. Please install it with: sudo apt-get install librsvg2-bin")
 	}
 
 	// Load SVG content from templates folder
@@ -35,25 +35,17 @@ func ConvertSVGToImage(outputPath string) error {
 	}
 	defer os.Remove(tempSVGPath) // Clean up temp file
 
-	// Convert SVG to JPEG using ImageMagick with Pi optimizations
+	// Convert SVG to PNG using rsvg-convert (much faster than ImageMagick)
 	// Force width to 384 dots (standard thermal printer width) and maintain aspect ratio
-	cmd := exec.Command("convert",
-		"-background", "white",
-		"-density", "150", // Reduced density for Pi
-		"-resize", "384x", // Force width to 384 dots, height auto-calculated
-		"-colorspace", "Gray", // Convert to grayscale for faster processing
-		"-threshold", "50%", // Convert to black/white for thermal printer
-		"-quality", "75", // Lower quality for faster processing
-		"-limit", "memory", "64MB", // Even more aggressive memory limits for Pi Zero
-		"-limit", "map", "128MB", // Reduced memory mapping
-		"-limit", "disk", "256MB", // Reduced disk usage
-		"-define", "registry:temporary-path=/tmp", // Use /tmp for temp files
+	cmd := exec.Command("rsvg-convert",
+		"--width", "384", // Force width to 384 dots, height auto-calculated
+		"--format", "png", // Output PNG format directly
+		"--output", outputPath,
 		tempSVGPath,
-		outputPath,
 	)
 
 	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("ImageMagick conversion failed: %v", err)
+		return fmt.Errorf("rsvg-convert SVG to PNG conversion failed: %v", err)
 	}
 
 	return nil

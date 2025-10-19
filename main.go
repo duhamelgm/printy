@@ -31,25 +31,25 @@ func main() {
 	// Initialize printer
 	imagePrinter := NewImagePrinter(printerName)
 
-	// File path for JPEG (faster than PNG on Pi Zero 2W)
-	jpegPath := filepath.Join(outputDir, "output.jpg")
+	// File path for PNG (faster conversion with rsvg-convert)
+	pngPath := filepath.Join(outputDir, "output.png")
 
-	fmt.Println("🔄 Converting SVG to JPEG...")
-	if err := ConvertSVGToImage(jpegPath); err != nil {
-		fmt.Printf("Error converting SVG to JPEG: %v\n", err)
+	fmt.Println("🔄 Converting SVG to PNG...")
+	if err := ConvertSVGToImage(pngPath); err != nil {
+		fmt.Printf("Error converting SVG to PNG: %v\n", err)
 		return
 	}
-	fmt.Println("✅ SVG to JPEG conversion completed")
+	fmt.Println("✅ SVG to PNG conversion completed")
 
 	fmt.Println("🔄 Printing with ESC/POS...")
-	if err := imagePrinter.PrintImage(jpegPath, printerName); err != nil {
+	if err := imagePrinter.PrintImage(pngPath, printerName); err != nil {
 		fmt.Printf("Error printing with ESC/POS: %v\n", err)
 		return
 	}
 	fmt.Println("✅ ESC/POS print job sent successfully!")
 
-	// Keep JPEG file for testing
-	fmt.Printf("📁 JPEG file saved at: %s\n", jpegPath)
+	// Keep PNG file for testing
+	fmt.Printf("📁 PNG file saved at: %s\n", pngPath)
 	fmt.Println("🔧 You can test ESC/POS printing manually:")
 	fmt.Println("   Test direct device access:")
 	fmt.Printf("   echo 'Hello World' > /dev/usb/lp0\n")

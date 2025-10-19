@@ -48,7 +48,7 @@ func (ip *ImagePrinter) PrintImage(imagePath string, printerName string) error {
 	}
 	defer imageFile.Close()
 
-	// Decode the image (supports JPEG, PNG, GIF)
+	// Decode the image (supports PNG, JPEG, GIF)
 	img, imgFormat, err := image.Decode(imageFile)
 	if err != nil {
 		stdin.Close()
