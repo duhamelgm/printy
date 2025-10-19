@@ -19,22 +19,22 @@ func NewImagePrinter(printerName string) *ImagePrinter {
 	}
 }
 
-// PrintImage prints an image file to the specified printer
-func (ip *ImagePrinter) PrintImage(imagePath string) error {
-	// Check if the image file exists
-	if _, err := os.Stat(imagePath); os.IsNotExist(err) {
-		return fmt.Errorf("image file does not exist: %s", imagePath)
+// PrintImage prints a PBM file to the specified printer in raw mode
+func (ip *ImagePrinter) PrintImage(pbmPath string) error {
+	// Check if the PBM file exists
+	if _, err := os.Stat(pbmPath); os.IsNotExist(err) {
+		return fmt.Errorf("PBM file does not exist: %s", pbmPath)
 	}
 
-	// Print using CUPS with lp command
-	cmd := exec.Command("lp", "-d", ip.printerName, imagePath)
+	// Send the PBM file directly to the printer using the printer name
+	// This assumes the printer is set up in CUPS and can handle raw data
+	cmd := exec.Command("lp", "-d", ip.printerName, "-o", "raw", pbmPath)
 
 	var stderr bytes.Buffer
 	cmd.Stderr = &stderr
 
-	err := cmd.Run()
-	if err != nil {
-		return fmt.Errorf("failed to print image: %v, stderr: %s", err, stderr.String())
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("failed to print PBM file: %v, stderr: %s", err, stderr.String())
 	}
 
 	return nil

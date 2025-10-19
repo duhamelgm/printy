@@ -9,7 +9,7 @@ import (
 	"time"
 )
 
-// ConvertSVGToImage converts SVG template to PNG image using ImageMagick
+// ConvertSVGToImage converts SVG template to PBM image using ImageMagick
 func ConvertSVGToImage(outputPath string) error {
 	// Check if ImageMagick is available
 	if _, err := exec.LookPath("convert"); err != nil {
@@ -35,17 +35,18 @@ func ConvertSVGToImage(outputPath string) error {
 	}
 	defer os.Remove(tempSVGPath) // Clean up temp file
 
-	// Convert SVG to PNG using ImageMagick with Pi memory optimizations
+	// Convert SVG to PBM using ImageMagick with Pi memory optimizations
 	cmd := exec.Command("convert",
 		"-background", "white",
 		"-density", "150", // Reduced density for Pi
-		"-quality", "85", // Slightly reduced quality
+		"-colorspace", "Gray", // Convert to grayscale
+		"-threshold", "50%", // Convert to black/white
+		"-monochrome",       // Ensure monochrome output
+		"-compress", "none", // No compression for raw printing
 		"-limit", "memory", "128MB", // Limit memory usage
 		"-limit", "map", "256MB", // Limit memory mapping
 		"-limit", "disk", "512MB", // Limit disk usage
 		"-define", "registry:temporary-path=/tmp", // Use /tmp for temp files
-		"-colorspace", "RGB", // Use RGB colorspace
-		"-type", "TrueColor", // Use TrueColor type
 		tempSVGPath,
 		outputPath,
 	)

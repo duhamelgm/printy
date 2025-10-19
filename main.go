@@ -26,27 +26,25 @@ func main() {
 	// Initialize printer
 	imagePrinter := NewImagePrinter(printerName)
 
-	// File path
-	imagePath := filepath.Join(outputDir, "output.png")
+	// File path for PBM
+	pbmPath := filepath.Join(outputDir, "output.pbm")
 
-	fmt.Println("🔄 Converting SVG to image...")
-	if err := ConvertSVGToImage(imagePath); err != nil {
-		fmt.Printf("Error converting SVG to image: %v\n", err)
+	fmt.Println("🔄 Converting SVG to PBM...")
+	if err := ConvertSVGToImage(pbmPath); err != nil {
+		fmt.Printf("Error converting SVG to PBM: %v\n", err)
 		return
 	}
-	fmt.Println("✅ SVG to image conversion completed")
+	fmt.Println("✅ SVG to PBM conversion completed")
 
-	fmt.Println("🔄 Printing image...")
-	if err := imagePrinter.PrintImage(imagePath); err != nil {
-		fmt.Printf("Error printing image: %v\n", err)
+	fmt.Println("🔄 Printing PBM...")
+	if err := imagePrinter.PrintImage(pbmPath); err != nil {
+		fmt.Printf("Error printing PBM: %v\n", err)
 		return
 	}
 	fmt.Println("✅ Print job sent successfully!")
 
-	// No cleanup needed for SVG conversion
-
 	// Clean up temporary files
 	defer func() {
-		os.Remove(imagePath)
+		os.Remove(pbmPath)
 	}()
 }
