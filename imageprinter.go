@@ -89,13 +89,49 @@ func printImageToPrinter(stdin io.Writer, img image.Image) error {
 	fmt.Printf("   📊 Bytes per line: %d\n", bytesPerLine)
 	fmt.Printf("   📊 Total lines to process: %d\n", height)
 
+	// DEBUG: Show ESC/POS command being sent
+	fmt.Printf("   🔍 DEBUG: Sending ESC/POS command: ESC * 0 (8-dot single density)\n")
+	fmt.Printf("   🔍 DEBUG: Width bytes: nL=%d, nH=%d\n", bytesPerLine&0xFF, (bytesPerLine>>8)&0xFF)
+
 	// Send ESC/POS bitmap command
-	stdin.Write([]byte("\x1B\x2A\x00")) // ESC * 0 (8-dot single density)
+	escPosCmd := []byte("\x1B\x2A\x00") // ESC * 0 (8-dot single density)
+	fmt.Printf("   🔍 DEBUG: ESC/POS command bytes: %02X %02X %02X\n", escPosCmd[0], escPosCmd[1], escPosCmd[2])
+	stdin.Write(escPosCmd)
 
 	// Send width (nL nH - low byte, high byte)
-	stdin.Write([]byte{byte(bytesPerLine & 0xFF), byte((bytesPerLine >> 8) & 0xFF)})
+	widthBytes := []byte{byte(bytesPerLine & 0xFF), byte((bytesPerLine >> 8) & 0xFF)}
+	fmt.Printf("   🔍 DEBUG: Width bytes: %02X %02X\n", widthBytes[0], widthBytes[1])
+	stdin.Write(widthBytes)
 
 	fmt.Println("   🔄 Processing image lines...")
+
+	// DEBUG: Test with a simple pattern first
+	fmt.Println("   🔍 DEBUG: Testing with simple pattern...")
+	testPattern := make([]byte, bytesPerLine)
+	// Create a simple test pattern: alternating black/white dots
+	for i := 0; i < bytesPerLine; i++ {
+		if i%2 == 0 {
+			testPattern[i] = 0xAA // 10101010 pattern
+		} else {
+			testPattern[i] = 0x55 // 01010101 pattern
+		}
+	}
+	fmt.Printf("   🔍 DEBUG: Test pattern (first 10 bytes): ")
+	for i := 0; i < 10 && i < len(testPattern); i++ {
+		fmt.Printf("%02X ", testPattern[i])
+	}
+	fmt.Println()
+
+	// Send test pattern
+	stdin.Write(testPattern)
+
+	// DEBUG: Sample first few pixels to check conversion
+	fmt.Println("   🔍 DEBUG: Sampling first 10 pixels:")
+	for x := 0; x < 10 && x < width; x++ {
+		r, g, b, _ := img.At(x, 0).RGBA()
+		isBlack := r < 32768 || g < 32768 || b < 32768
+		fmt.Printf("   🔍   Pixel %d: RGB(%d,%d,%d) -> %s\n", x, r>>8, g>>8, b>>8, map[bool]string{true: "BLACK", false: "WHITE"}[isBlack])
+	}
 
 	// Convert image to bitmap data (optimized for Pi Zero 2W)
 	// Since ImageMagick already converted to black/white, we can optimize further
@@ -116,6 +152,15 @@ func printImageToPrinter(stdin io.Writer, img image.Image) error {
 				bitIndex := 7 - (x % 8)
 				lineData[byteIndex] |= 1 << bitIndex
 			}
+		}
+
+		// DEBUG: Show first line's bitmap data
+		if y == 0 {
+			fmt.Printf("   🔍 DEBUG: First line bitmap data (first 10 bytes): ")
+			for i := 0; i < 10 && i < len(lineData); i++ {
+				fmt.Printf("%02X ", lineData[i])
+			}
+			fmt.Println()
 		}
 
 		// Send line data
