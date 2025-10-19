@@ -29,12 +29,12 @@ func main() {
 	// File path
 	imagePath := filepath.Join(outputDir, "output.png")
 
-	fmt.Println("🔄 Converting HTML to image...")
-	if err := ConvertHTMLToImage(imagePath); err != nil {
-		fmt.Printf("Error converting HTML to image: %v\n", err)
+	fmt.Println("🔄 Converting SVG to image...")
+	if err := ConvertSVGToImage(imagePath); err != nil {
+		fmt.Printf("Error converting SVG to image: %v\n", err)
 		return
 	}
-	fmt.Println("✅ HTML to image conversion completed")
+	fmt.Println("✅ SVG to image conversion completed")
 
 	fmt.Println("🔄 Printing image...")
 	if err := imagePrinter.PrintImage(imagePath); err != nil {
@@ -43,8 +43,7 @@ func main() {
 	}
 	fmt.Println("✅ Print job sent successfully!")
 
-	// Clean up Chrome instance when done
-	defer CloseChromeInstance()
+	// No cleanup needed for SVG conversion
 
 	// Clean up temporary files
 	defer func() {

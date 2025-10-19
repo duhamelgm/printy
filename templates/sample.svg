@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="1200" height="1600" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <style>
+      .ticket-border { fill: none; stroke: #000; stroke-width: 6; }
+      .ticket-header { fill: #f3f4f6; stroke: #000; stroke-width: 4; }
+      .ticket-content { fill: white; }
+      .ticket-footer { fill: #f3f4f6; stroke: #000; stroke-width: 4; }
+      .title-text { font-family: Arial, sans-serif; font-size: 72px; font-weight: bold; fill: #000; }
+      .subtitle-text { font-family: Arial, sans-serif; font-size: 36px; fill: #374151; }
+      .header-text { font-family: Arial, sans-serif; font-size: 48px; font-weight: bold; fill: #000; }
+      .content-text { font-family: Arial, sans-serif; font-size: 24px; fill: #000; }
+      .small-text { font-family: Arial, sans-serif; font-size: 18px; fill: #6b7280; }
+      .priority-high { font-family: Arial, sans-serif; font-size: 32px; font-weight: bold; fill: #dc2626; }
+      .priority-label { font-family: Arial, sans-serif; font-size: 24px; fill: #6b7280; }
+    </style>
+  </defs>
+  
+  <!-- Ticket Border -->
+  <rect x="20" y="20" width="1160" height="1560" class="ticket-border" rx="8"/>
+  
+  <!-- Ticket Header -->
+  <rect x="40" y="40" width="1120" height="200" class="ticket-header"/>
+  
+  <!-- Ticket ID and Title -->
+  <text x="60" y="120" class="title-text">BUG-1234</text>
+  <text x="60" y="180" class="subtitle-text">Fix login authentication issue</text>
+  
+  <!-- Priority -->
+  <text x="1000" y="120" class="priority-high" text-anchor="end">HIGH</text>
+  <text x="1000" y="160" class="priority-label" text-anchor="end">Priority</text>
+  
+  <!-- Ticket Content -->
+  <rect x="40" y="260" width="1120" height="1200" class="ticket-content"/>
+  
+  <!-- Description Section -->
+  <text x="60" y="320" class="header-text">Description</text>
+  <rect x="60" y="340" width="1080" height="200" fill="#f9fafb" stroke="#d1d5db" stroke-width="2"/>
+  <text x="80" y="380" class="content-text">Users are experiencing authentication failures when attempting to log in with valid credentials.</text>
+  <text x="80" y="410" class="content-text">The login form accepts the credentials but fails to authenticate against the database.</text>
+  <text x="80" y="440" class="content-text">This affects all user types and occurs consistently across different browsers.</text>
+  
+  <!-- Details Section -->
+  <text x="60" y="580" class="header-text">Details</text>
+  
+  <!-- Assignee -->
+  <rect x="60" y="600" width="520" height="120" fill="#f9fafb" stroke="#d1d5db" stroke-width="2"/>
+  <text x="80" y="640" class="content-text" font-weight="bold">Assignee</text>
+  <text x="80" y="670" class="content-text">John Developer</text>
+  
+  <!-- Reporter -->
+  <rect x="600" y="600" width="520" height="120" fill="#f9fafb" stroke="#d1d5db" stroke-width="2"/>
+  <text x="620" y="640" class="content-text" font-weight="bold">Reporter</text>
+  <text x="620" y="670" class="content-text">Jane Tester</text>
+  
+  <!-- Component -->
+  <rect x="60" y="740" width="520" height="120" fill="#f9fafb" stroke="#d1d5db" stroke-width="2"/>
+  <text x="80" y="780" class="content-text" font-weight="bold">Component</text>
+  <text x="80" y="810" class="content-text">Authentication</text>
+  
+  <!-- Labels -->
+  <rect x="600" y="740" width="520" height="120" fill="#f9fafb" stroke="#d1d5db" stroke-width="2"/>
+  <text x="620" y="780" class="content-text" font-weight="bold">Labels</text>
+  <text x="620" y="810" class="content-text">bug, critical</text>
+  
+  <!-- Steps to Reproduce -->
+  <text x="60" y="920" class="header-text">Steps to Reproduce</text>
+  <rect x="60" y="940" width="1080" height="200" fill="#f9fafb" stroke="#d1d5db" stroke-width="2"/>
+  <text x="80" y="980" class="content-text">1. Navigate to login page</text>
+  <text x="80" y="1010" class="content-text">2. Enter valid username and password</text>
+  <text x="80" y="1040" class="content-text">3. Click "Login" button</text>
+  <text x="80" y="1070" class="content-text">4. Observe authentication failure</text>
+  
+  <!-- Acceptance Criteria -->
+  <text x="60" y="1180" class="header-text">Acceptance Criteria</text>
+  <rect x="60" y="1200" width="1080" height="200" fill="#f9fafb" stroke="#d1d5db" stroke-width="2"/>
+  <text x="80" y="1240" class="content-text">✓ Valid credentials should authenticate successfully</text>
+  <text x="80" y="1270" class="content-text">✓ Invalid credentials should show error message</text>
+  <text x="80" y="1300" class="content-text">✓ User should be redirected to dashboard after login</text>
+  
+  <!-- Ticket Footer -->
+  <rect x="40" y="1420" width="1120" height="160" class="ticket-footer"/>
+  <text x="60" y="1460" class="small-text">Created: {{.Timestamp}}</text>
+  <text x="1100" y="1460" class="small-text" text-anchor="end">Status: IN PROGRESS</text>
+</svg>
