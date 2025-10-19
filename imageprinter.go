@@ -3,7 +3,7 @@ package main
 import (
 	"fmt"
 	"image"
-	"image/png"
+	"image/jpeg"
 	"io"
 	"os"
 	"os/exec"
@@ -21,7 +21,7 @@ func NewImagePrinter(printerName string) *ImagePrinter {
 	}
 }
 
-// PrintImage prints a PNG image using ESC/POS commands via lp command
+// PrintImage prints a JPEG image using ESC/POS commands via lp command
 func (ip *ImagePrinter) PrintImage(imagePath string, printerName string) error {
 	// Check if the image file exists
 	if _, err := os.Stat(imagePath); os.IsNotExist(err) {
@@ -38,7 +38,7 @@ func (ip *ImagePrinter) PrintImage(imagePath string, printerName string) error {
 	// Print header text using basic ESC/POS commands
 	stdin.Write([]byte("Printing image from: " + imagePath + "\n\n"))
 
-	// Load the PNG image
+	// Load the JPEG image
 	imageFile, err := os.Open(imagePath)
 	if err != nil {
 		stdin.Close()
@@ -46,11 +46,11 @@ func (ip *ImagePrinter) PrintImage(imagePath string, printerName string) error {
 	}
 	defer imageFile.Close()
 
-	// Decode the PNG image
-	img, err := png.Decode(imageFile)
+	// Decode the JPEG image (much faster than PNG on Pi Zero 2W)
+	img, err := jpeg.Decode(imageFile)
 	if err != nil {
 		stdin.Close()
-		return fmt.Errorf("failed to decode PNG image: %v", err)
+		return fmt.Errorf("failed to decode JPEG image: %v", err)
 	}
 
 	// Print the image using basic ESC/POS bitmap commands
@@ -78,12 +78,16 @@ func printImageToPrinter(stdin io.Writer, img image.Image) error {
 	width := bounds.Dx()
 	height := bounds.Dy()
 
+	fmt.Printf("   📊 Image dimensions: %dx%d pixels\n", width, height)
+
 	// ESC/POS bitmap command: ESC * m nL nH d1...dk
 	// m = 0 (8-dot single density), 1 (8-dot double density), 32 (24-dot single density), 33 (24-dot double density)
 	// For simplicity, we'll use 8-dot single density (m=0)
 
 	// Calculate bytes per line (8 dots per byte)
 	bytesPerLine := (width + 7) / 8
+	fmt.Printf("   📊 Bytes per line: %d\n", bytesPerLine)
+	fmt.Printf("   📊 Total lines to process: %d\n", height)
 
 	// Send ESC/POS bitmap command
 	stdin.Write([]byte("\x1B\x2A\x00")) // ESC * 0 (8-dot single density)
@@ -91,17 +95,20 @@ func printImageToPrinter(stdin io.Writer, img image.Image) error {
 	// Send width (nL nH - low byte, high byte)
 	stdin.Write([]byte{byte(bytesPerLine & 0xFF), byte((bytesPerLine >> 8) & 0xFF)})
 
-	// Convert image to bitmap data
+	fmt.Println("   🔄 Processing image lines...")
+
+	// Convert image to bitmap data (optimized for Pi Zero 2W)
+	// Since ImageMagick already converted to black/white, we can optimize further
 	for y := 0; y < height; y++ {
 		lineData := make([]byte, bytesPerLine)
 
 		for x := 0; x < width; x++ {
-			// Get pixel color
+			// Get pixel color (already black/white from ImageMagick)
 			r, g, b, _ := img.At(x, y).RGBA()
 
-			// Convert to grayscale and determine if pixel should be black
-			gray := (r + g + b) / 3
-			isBlack := gray < 32768 // Threshold for black/white conversion
+			// Fast black/white check (since ImageMagick already thresholded)
+			// Just check if any color component is below threshold
+			isBlack := r < 32768 || g < 32768 || b < 32768
 
 			if isBlack {
 				// Set corresponding bit in the byte
@@ -113,7 +120,14 @@ func printImageToPrinter(stdin io.Writer, img image.Image) error {
 
 		// Send line data
 		stdin.Write(lineData)
+
+		// Progress indicator for every 10% of lines
+		if (y+1)%(height/10+1) == 0 || y == height-1 {
+			progress := ((y + 1) * 100) / height
+			fmt.Printf("   📈 Progress: %d%% (%d/%d lines)\n", progress, y+1, height)
+		}
 	}
 
+	fmt.Println("   ✅ Bitmap conversion completed")
 	return nil
 }
