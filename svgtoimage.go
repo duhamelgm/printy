@@ -36,10 +36,11 @@ func ConvertSVGToImage(outputPath string) error {
 	defer os.Remove(tempSVGPath) // Clean up temp file
 
 	// Convert SVG to JPEG using ImageMagick with Pi optimizations
-	// JPEG is much faster to decode than PNG on Pi Zero 2W
+	// Force width to 384 dots (standard thermal printer width) and maintain aspect ratio
 	cmd := exec.Command("convert",
 		"-background", "white",
 		"-density", "150", // Reduced density for Pi
+		"-resize", "384x", // Force width to 384 dots, height auto-calculated
 		"-colorspace", "Gray", // Convert to grayscale for faster processing
 		"-threshold", "50%", // Convert to black/white for thermal printer
 		"-quality", "75", // Lower quality for faster processing
