@@ -27,7 +27,6 @@ temp/
 chrome-data/
 
 # Output files
-*.png
 *.jpg
 *.jpeg
 *.pdf
