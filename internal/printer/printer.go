@@ -48,3 +48,8 @@ func (p *Printer) Print(ticketID, title, assignee string) error {
 
 	return nil
 }
+
+// GetPrinterName returns the printer name
+func (p *Printer) GetPrinterName() string {
+	return p.printerName
+}
