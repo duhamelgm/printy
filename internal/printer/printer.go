@@ -3,7 +3,10 @@ package printer
 import (
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
+	"strings"
+	"time"
 )
 
 // Printer handles all printing operations
@@ -47,4 +50,45 @@ func (p *Printer) Print(ticketID, title, assignee string) error {
 	}
 
 	return nil
+}
+
+// isPrinterIdle checks if the printer is currently idle (no active jobs)
+func (p *Printer) isPrinterIdle() (bool, error) {
+	// Use lpstat to check printer status
+	cmd := exec.Command("lpstat", "-p", p.printerName)
+	output, err := cmd.Output()
+	if err != nil {
+		return false, fmt.Errorf("failed to check printer status: %v", err)
+	}
+
+	// Check if printer is idle
+	// If printer is idle, lpstat output should not contain "printing" or "processing"
+	outputStr := strings.ToLower(string(output))
+	isIdle := !strings.Contains(outputStr, "printing") &&
+		!strings.Contains(outputStr, "processing") &&
+		!strings.Contains(outputStr, "busy")
+
+	return isIdle, nil
+}
+
+// WaitForPrinterIdle waits until the printer becomes idle
+func (p *Printer) WaitForPrinterIdle(maxWait time.Duration) error {
+	timeout := time.After(maxWait)
+	ticker := time.NewTicker(500 * time.Millisecond) // Check every 500ms
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-timeout:
+			return fmt.Errorf("timeout waiting for printer to become idle after %v", maxWait)
+		case <-ticker.C:
+			isIdle, err := p.isPrinterIdle()
+			if err != nil {
+				return fmt.Errorf("error checking printer status: %v", err)
+			}
+			if isIdle {
+				return nil
+			}
+		}
+	}
 }

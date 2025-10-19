@@ -149,11 +149,17 @@ func (s *Server) handlePrintBacklog(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Print each relevant ticket
-	for _, ticket := range relevantTickets {
+	for i, ticket := range relevantTickets {
+		startTime := time.Now()
+		log.Printf("🖨️  Starting print job %d/%d for ticket %s", i+1, len(relevantTickets), ticket.RefID)
+
 		if err := s.printer.Print(ticket.RefID, ticket.Title, ticket.Assignee); err != nil {
 			log.Printf("Failed to print ticket %d: %v", ticket.ID, err)
 			continue
 		}
+
+		printDuration := time.Since(startTime)
+		log.Printf("✅ Print job %d completed in %v", i+1, printDuration)
 
 		// Create a print record in database
 		print := &db.Print{
@@ -163,6 +169,17 @@ func (s *Server) handlePrintBacklog(w http.ResponseWriter, r *http.Request) {
 		}
 		if err := s.database.CreatePrint(print); err != nil {
 			log.Printf("⚠️  Warning: Failed to record print for ticket %d: %v", ticket.ID, err)
+		}
+
+		// Wait for printer to become idle before next job (except for last ticket)
+		if i < len(relevantTickets)-1 {
+			log.Printf("⏳ Waiting for printer to become idle before next job...")
+			if err := s.printer.WaitForPrinterIdle(30 * time.Second); err != nil {
+				log.Printf("⚠️  Warning: Timeout waiting for printer idle: %v", err)
+				log.Printf("🔄 Proceeding with next job anyway...")
+			} else {
+				log.Printf("✅ Printer is idle, proceeding with next job")
+			}
 		}
 	}
 
