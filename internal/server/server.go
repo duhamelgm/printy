@@ -99,6 +99,12 @@ func (s *Server) Start() error {
 	return server.ListenAndServe()
 }
 
+// PrintBacklogRequest represents a print backlog request
+type PrintBacklogRequest struct {
+	Assignee string `json:"assignee,omitempty"`
+	Count    int    `json:"count,omitempty"`
+}
+
 // handlePrintBacklog handles print backlog requests
 func (s *Server) handlePrintBacklog(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
@@ -106,8 +112,30 @@ func (s *Server) handlePrintBacklog(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Parse JSON request body (optional)
+	var printReq PrintBacklogRequest
+	if r.Body != nil {
+		if err := json.NewDecoder(r.Body).Decode(&printReq); err != nil {
+			response := PrintResponse{
+				Success: false,
+				Message: "Invalid JSON body",
+				Error:   err.Error(),
+			}
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusBadRequest)
+			json.NewEncoder(w).Encode(response)
+			return
+		}
+	}
+
+	// Set default count if not provided
+	count := printReq.Count
+	if count <= 0 {
+		count = 10
+	}
+
 	// Get relevant tickets for today
-	relevantTickets, err := tickets.GetRelevantTickets(s.database, 10)
+	relevantTickets, err := tickets.GetRelevantTickets(s.database, count, printReq.Assignee)
 	if err != nil {
 		response := PrintResponse{
 			Success: false,

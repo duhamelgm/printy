@@ -110,18 +110,23 @@ func GetTickets(apiKey, databaseID string) ([]TicketItem, error) {
 			}
 		}
 
-		// Extract assignee (people) - save only first name
+		// Extract assignee (people) - save first names of all assignees
 		if assigneeProp, ok := properties["assignee"].(map[string]interface{}); ok {
 			if people, ok := assigneeProp["people"].([]interface{}); ok && len(people) > 0 {
-				if person, ok := people[0].(map[string]interface{}); ok {
-					if name, ok := person["name"].(string); ok {
-						// Extract only the first name
-						parts := strings.Fields(name)
-						if len(parts) > 0 {
-							ticket.Assignee = parts[0]
+				var firstNames []string
+				for _, personInterface := range people {
+					if person, ok := personInterface.(map[string]interface{}); ok {
+						if name, ok := person["name"].(string); ok {
+							// Extract only the first name
+							parts := strings.Fields(name)
+							if len(parts) > 0 {
+								firstNames = append(firstNames, parts[0])
+							}
 						}
 					}
 				}
+				// Join all first names with commas
+				ticket.Assignee = strings.Join(firstNames, ", ")
 			}
 		}
 

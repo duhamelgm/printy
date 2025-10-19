@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 
+	"printy/internal/cron"
 	"printy/internal/server"
 )
 
@@ -24,6 +25,11 @@ func main() {
 	fmt.Printf("📋 Set PRINTER_NAME environment variable to specify printer\n")
 	fmt.Printf("📊 Set DB_PATH environment variable to specify database location\n")
 	fmt.Printf("🌐 Server will be available at: http://localhost:%s\n", *port)
+
+	// Start the daily print job scheduler
+	scheduler := cron.NewScheduler(fmt.Sprintf("http://localhost:%s", *port))
+	scheduler.StartDailyPrintJob()
+	fmt.Printf("⏰ Daily print job scheduled for 8:00 AM Montreal time\n")
 
 	// Start server (this blocks)
 	if err := s.Start(); err != nil {

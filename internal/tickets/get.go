@@ -3,11 +3,12 @@ package tickets
 import (
 	"fmt"
 	"printy/internal/db"
+	"strings"
 	"time"
 )
 
 // GetRelevantTickets returns tickets that are relevant for today
-func GetRelevantTickets(database *db.Database, count int) ([]db.Ticket, error) {
+func GetRelevantTickets(database *db.Database, count int, assigneeFilter string) ([]db.Ticket, error) {
 	// Get all tickets
 	allTickets, err := database.GetAllTickets()
 	if err != nil {
@@ -30,6 +31,13 @@ func GetRelevantTickets(database *db.Database, count int) ([]db.Ticket, error) {
 		}
 		if inCooldown {
 			continue // Skip if in cooldown
+		}
+
+		// Check assignee filter if provided (case-insensitive)
+		if assigneeFilter != "" {
+			if !strings.Contains(strings.ToLower(ticket.Assignee), strings.ToLower(assigneeFilter)) {
+				continue // Skip if assignee doesn't match filter
+			}
 		}
 
 		relevantTickets = append(relevantTickets, ticket)
