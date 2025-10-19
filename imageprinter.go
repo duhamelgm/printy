@@ -89,18 +89,45 @@ func printImageToPrinter(stdin io.Writer, img image.Image) error {
 	fmt.Printf("   📊 Bytes per line: %d\n", bytesPerLine)
 	fmt.Printf("   📊 Total lines to process: %d\n", height)
 
-	// DEBUG: Show ESC/POS command being sent
-	fmt.Printf("   🔍 DEBUG: Sending ESC/POS command: ESC * 0 (8-dot single density)\n")
-	fmt.Printf("   🔍 DEBUG: Width bytes: nL=%d, nH=%d\n", bytesPerLine&0xFF, (bytesPerLine>>8)&0xFF)
+	// DEBUG: Try different ESC/POS bitmap commands
+	fmt.Println("   🔍 DEBUG: Testing different ESC/POS bitmap commands...")
 
-	// Send ESC/POS bitmap command
-	escPosCmd := []byte("\x1B\x2A\x00") // ESC * 0 (8-dot single density)
-	fmt.Printf("   🔍 DEBUG: ESC/POS command bytes: %02X %02X %02X\n", escPosCmd[0], escPosCmd[1], escPosCmd[2])
+	// Try ESC * m nL nH format (most common)
+	fmt.Printf("   🔍 DEBUG: Trying ESC * 0 (8-dot single density)\n")
+	escPosCmd := []byte("\x1B\x2A\x00") // ESC * 0
+	fmt.Printf("   🔍 DEBUG: Command bytes: %02X %02X %02X\n", escPosCmd[0], escPosCmd[1], escPosCmd[2])
 	stdin.Write(escPosCmd)
 
 	// Send width (nL nH - low byte, high byte)
 	widthBytes := []byte{byte(bytesPerLine & 0xFF), byte((bytesPerLine >> 8) & 0xFF)}
 	fmt.Printf("   🔍 DEBUG: Width bytes: %02X %02X\n", widthBytes[0], widthBytes[1])
+	stdin.Write(widthBytes)
+
+	// Try alternative: ESC * m nL nH with different density
+	fmt.Println("   🔍 DEBUG: Trying ESC * 1 (8-dot double density)")
+	escPosCmd2 := []byte("\x1B\x2A\x01") // ESC * 1
+	fmt.Printf("   🔍 DEBUG: Command bytes: %02X %02X %02X\n", escPosCmd2[0], escPosCmd2[1], escPosCmd2[2])
+	stdin.Write(escPosCmd2)
+	stdin.Write(widthBytes)
+
+	// Try alternative: ESC * m nL nH with 24-dot density
+	fmt.Println("   🔍 DEBUG: Trying ESC * 32 (24-dot single density)")
+	escPosCmd3 := []byte("\x1B\x2A\x20") // ESC * 32 (0x20 = 32)
+	fmt.Printf("   🔍 DEBUG: Command bytes: %02X %02X %02X\n", escPosCmd3[0], escPosCmd3[1], escPosCmd3[2])
+	stdin.Write(escPosCmd3)
+	stdin.Write(widthBytes)
+
+	// Try alternative: GS v 0 command (some printers use this)
+	fmt.Println("   🔍 DEBUG: Trying GS v 0 (alternative bitmap command)")
+	gsCmd := []byte("\x1D\x76\x30\x00") // GS v 0
+	fmt.Printf("   🔍 DEBUG: Command bytes: %02X %02X %02X %02X\n", gsCmd[0], gsCmd[1], gsCmd[2], gsCmd[3])
+	stdin.Write(gsCmd)
+
+	// Try alternative: GS * command (some printers use this)
+	fmt.Println("   🔍 DEBUG: Trying GS * (alternative bitmap command)")
+	gsCmd2 := []byte("\x1D\x2A\x00") // GS * 0
+	fmt.Printf("   🔍 DEBUG: Command bytes: %02X %02X %02X\n", gsCmd2[0], gsCmd2[1], gsCmd2[2])
+	stdin.Write(gsCmd2)
 	stdin.Write(widthBytes)
 
 	fmt.Println("   🔄 Processing image lines...")
