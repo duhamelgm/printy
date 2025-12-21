@@ -75,8 +75,14 @@ func (ip *ImagePrinter) PrintImage(imagePath string, printerName string) error {
 		Threshold: 0.5, // Black/white threshold
 	}
 
+	sz := img.Bounds().Size()
+
+	data, rw, bw := rasterConv.ToRaster(img)
+
+	ep.Raster(rw, sz.Y, bw, data, "graphics")
+
 	// Print the image using the raster converter
-	rasterConv.Print(img, ep)
+	// rasterConv.Print(img, ep)
 
 	// Add some spacing and cut
 	ep.Linefeed()
