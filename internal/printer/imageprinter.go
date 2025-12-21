@@ -71,8 +71,8 @@ func (ip *ImagePrinter) PrintImage(imagePath string, printerName string) error {
 
 	// Create raster converter with Pi Zero 2W optimizations
 	rasterConv := &raster.Converter{
-		MaxWidth:  1024, // Standard thermal printer width
-		Threshold: 0.5,  // Black/white threshold
+		MaxWidth:  576, // Standard thermal printer width
+		Threshold: 0.5, // Black/white threshold
 	}
 
 	// Print the image using the raster converter
