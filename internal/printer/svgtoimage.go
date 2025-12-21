@@ -38,7 +38,7 @@ func ConvertSVGToImage(outputPath string, ticketID, title, assignee string) erro
 	// Convert SVG to PNG using rsvg-convert (much faster than ImageMagick)
 	// Force width to 384 dots (standard thermal printer width) and maintain aspect ratio
 	cmd := exec.Command("rsvg-convert",
-		"--width", "512", // Force width to 384 dots, height auto-calculated
+		"--width", "1024", // Force width to 384 dots, height auto-calculated
 		"--format", "png", // Output PNG format directly
 		"--output", outputPath,
 		tempSVGPath,
