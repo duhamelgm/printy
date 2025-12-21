@@ -67,7 +67,7 @@ func (ip *ImagePrinter) PrintImage(imagePath string, printerName string) error {
 
 	// Initialize printer
 	ep.Init()
-	ep.SetAlign("center")
+	ep.SetAlign("left")
 
 	// Create raster converter with Pi Zero 2W optimizations
 	rasterConv := &raster.Converter{
