@@ -13,7 +13,6 @@ import (
 	"printy/internal/notion"
 	"printy/internal/printer"
 	"printy/internal/tickets"
-	"printy/internal/tmp"
 )
 
 // Server represents the HTTP server
@@ -88,8 +87,6 @@ func (s *Server) Start() error {
 	mux.HandleFunc("/clear-prints/", s.handleClearPrints) // Handle trailing slash
 	mux.HandleFunc("/clear-tickets", s.handleClearTickets)
 	mux.HandleFunc("/clear-tickets/", s.handleClearTickets) // Handle trailing slash
-	mux.HandleFunc("/real-test", s.handleRealTest)
-	mux.HandleFunc("/real-test/", s.handleRealTest) // Handle trailing slash
 
 	server := &http.Server{
 		Addr:         ":" + s.port,
@@ -393,46 +390,6 @@ func (s *Server) handleClearTickets(w http.ResponseWriter, r *http.Request) {
 	response := PrintResponse{
 		Success: true,
 		Message: "All tickets cleared successfully",
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(response)
-}
-
-// handleRealTest handles the real-test endpoint for animation printing
-func (s *Server) handleRealTest(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-		return
-	}
-
-	log.Printf("🎬 Starting animation printing test...")
-
-	// Create animator instance
-	animator := tmp.NewAnimator(s.printer.GetPrinterName())
-
-	// Print the animation
-	if err := animator.PrintAnimation(); err != nil {
-		log.Printf("❌ Animation printing failed: %v", err)
-
-		response := PrintResponse{
-			Success: false,
-			Message: fmt.Sprintf("Animation printing failed: %v", err),
-		}
-
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusInternalServerError)
-		json.NewEncoder(w).Encode(response)
-		return
-	}
-
-	log.Printf("✅ Animation printing completed successfully!")
-
-	// Success response
-	response := PrintResponse{
-		Success: true,
-		Message: "Animation printing completed successfully",
 	}
 
 	w.Header().Set("Content-Type", "application/json")

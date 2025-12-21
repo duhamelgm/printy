@@ -54,7 +54,7 @@ func ConvertSVGToImage(outputPath string, ticketID, title, assignee string) erro
 // loadSVGFromTemplates loads SVG content from the templates folder
 func loadSVGFromTemplates(ticketID, title, assignee string) (string, error) {
 	// Get template path relative to executable directory
-	templatePath, err := GetExecutableRelativePath("templates/sample.svg")
+	templatePath, err := GetExecutableRelativePath("templates/sample2.svg")
 	if err != nil {
 		return "", fmt.Errorf("failed to get template path: %v", err)
 	}
