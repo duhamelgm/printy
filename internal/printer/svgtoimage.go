@@ -7,6 +7,8 @@ import (
 	"path/filepath"
 	"strings"
 	"time"
+
+	"math/rand"
 )
 
 // ConvertSVGToImage converts SVG template to JPEG image using rsvg-convert
@@ -64,11 +66,19 @@ func loadSVGFromTemplates(ticketID, title, assignee string) (string, error) {
 		return "", fmt.Errorf("failed to read template file %s: %v", templatePath, err)
 	}
 
+	randomNumberOf3Digits := rand.Intn(1000)
+	if randomNumberOf3Digits < 100 {
+		randomNumberOf3Digits += 100
+	}
+	if randomNumberOf3Digits > 999 {
+		randomNumberOf3Digits -= 100
+	}
+
 	// Replace placeholders
 	svgContent := string(content)
 	timestamp := time.Now().Format("2006-01-02 15:04:05")
 	svgContent = strings.ReplaceAll(svgContent, "{{.Timestamp}}", timestamp)
-	svgContent = strings.ReplaceAll(svgContent, "{{.TicketID}}", ticketID)
+	svgContent = strings.ReplaceAll(svgContent, "{{.TicketID}}", fmt.Sprintf("HOME-%03d", randomNumberOf3Digits))
 	svgContent = strings.ReplaceAll(svgContent, "{{.Title}}", title)
 	svgContent = strings.ReplaceAll(svgContent, "{{.Assignee}}", assignee)
 

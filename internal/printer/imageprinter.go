@@ -79,7 +79,7 @@ func (ip *ImagePrinter) PrintImage(imagePath string, printerName string) error {
 
 	data, rw, bw := rasterConv.ToRaster(img)
 
-	ep.Raster(rw, sz.Y, bw, data, "graphics")
+	ep.Raster(rw, sz.Y, bw, data, "bitImage")
 
 	// Print the image using the raster converter
 	// rasterConv.Print(img, ep)
