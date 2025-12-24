@@ -2,6 +2,7 @@ package queue
 
 import (
 	"context"
+	"crypto/tls"
 	"database/sql"
 	"errors"
 	"fmt"
@@ -69,6 +70,8 @@ func NewRunner() (*Runner, error) {
 		Addr:     redisAddr,
 		Password: redisPassword,
 		DB:       redisDB,
+		// Always use TLS; adjust config here if certificates are needed later.
+		TLSConfig: &tls.Config{},
 	})
 
 	if err := redisClient.Ping(ctx).Err(); err != nil {
