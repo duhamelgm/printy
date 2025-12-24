@@ -5,6 +5,7 @@ import (
 	"image"
 	"image/color"
 	"io"
+	"log"
 	"os"
 	"os/exec"
 
@@ -91,6 +92,70 @@ func (ip *ImagePrinter) PrintImage(imagePath string, printerName string) error {
 
 	// Close stdin and run the command
 	stdin.Close()
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("lp command failed: %v", err)
+	}
+
+	return nil
+}
+
+func intLowHigh(inpNumber int, outBytes int) []byte {
+
+	maxInput := (256 << (uint((outBytes * 8)) - 1))
+
+	if outBytes < 1 || outBytes > 4 {
+		log.Println("Can only output 1-4 bytes")
+	}
+	if inpNumber < 0 || inpNumber > maxInput {
+		log.Printf("Number too large. Can only output up to %d in %d bytes\n", maxInput, outBytes)
+	}
+	var outp []byte
+	for i := 0; i < outBytes; i++ {
+		inpNumberByte := byte(inpNumber % 256)
+		outp = append(outp, inpNumberByte)
+		inpNumber = inpNumber / 256
+	}
+	return outp
+}
+
+// PrintRawRaster sends precomputed raster/ESC-POS binary data directly to the printer.
+// The data is written as-is to the printer in raw mode.
+func (ip *ImagePrinter) PrintRawRaster(rasterData []byte, width int, height int) error {
+	if len(rasterData) == 0 {
+		return fmt.Errorf("raster data is empty")
+	}
+
+	cmd := exec.Command("lp", "-d", ip.printerName, "-o", "raw")
+	stdin, err := cmd.StdinPipe()
+	if err != nil {
+		return fmt.Errorf("failed to create stdin pipe: %v", err)
+	}
+
+	// Wrap stdin so escpos can write raw bytes
+	readWriter := &readWriterWrapper{writer: stdin}
+	ep, err := escpos.NewPrinter(readWriter)
+	if err != nil {
+		stdin.Close()
+		return fmt.Errorf("failed to create escpos printer: %v", err)
+	}
+
+	densityByte := byte(0)
+	header := []byte{0x1D, 0x76, 0x30}
+	header = append(header, densityByte)
+	width = (width + 7) >> 3
+	header = append(header, intLowHigh(width, 2)...)
+	header = append(header, intLowHigh(height, 2)...)
+
+	fullImage := append(header, rasterData...)
+
+	if _, err := ep.Write(fullImage); err != nil {
+		stdin.Close()
+		return fmt.Errorf("failed to write raster data: %v", err)
+	}
+	ep.End()
+
+	stdin.Close()
+
 	if err := cmd.Run(); err != nil {
 		return fmt.Errorf("lp command failed: %v", err)
 	}
