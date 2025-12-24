@@ -2,7 +2,6 @@ package queue
 
 import (
 	"context"
-	"crypto/tls"
 	"database/sql"
 	"errors"
 	"fmt"
@@ -51,28 +50,19 @@ func NewRunner() (*Runner, error) {
 		return nil, fmt.Errorf("failed to ping postgres: %w", err)
 	}
 
-	redisAddr := os.Getenv("REDIS_HOST")
-	if redisAddr == "" {
-		redisAddr = "localhost:6379"
-	}
-	redisPassword := os.Getenv("REDIS_PASSWORD")
-
-	redisDB := 0
-	if redisDBStr := os.Getenv("REDIS_DB"); redisDBStr != "" {
-		if parsed, convErr := strconv.Atoi(redisDBStr); convErr == nil {
-			redisDB = parsed
-		} else {
-			log.Printf("Invalid REDIS_DB value %q, defaulting to 0: %v", redisDBStr, convErr)
-		}
+	var redisOpts *redis.Options
+	redisURL := os.Getenv("REDIS_URL")
+	if redisURL == "" {
+		return nil, fmt.Errorf("REDIS_URL environment variable is not set")
 	}
 
-	redisClient := redis.NewClient(&redis.Options{
-		Addr:     redisAddr,
-		Password: redisPassword,
-		DB:       redisDB,
-		// Always use TLS; adjust config here if certificates are needed later.
-		TLSConfig: &tls.Config{},
-	})
+	parsed, err := redis.ParseURL(redisURL)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse REDIS_URL: %w", err)
+	}
+	redisOpts = parsed
+
+	redisClient := redis.NewClient(redisOpts)
 
 	if err := redisClient.Ping(ctx).Err(); err != nil {
 		postgresDB.Close()
