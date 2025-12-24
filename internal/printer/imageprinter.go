@@ -139,6 +139,13 @@ func (ip *ImagePrinter) PrintRawRaster(rasterData []byte, width int, height int)
 		return fmt.Errorf("failed to create escpos printer: %v", err)
 	}
 
+	log.Printf("Starting to print raster data")
+	log.Printf("Width: %d", width)
+	log.Printf("Height: %d", height)
+
+	ep.Init()
+	ep.SetAlign("left")
+
 	densityByte := byte(0)
 	header := []byte{0x1D, 0x76, 0x30}
 	header = append(header, densityByte)
@@ -152,6 +159,8 @@ func (ip *ImagePrinter) PrintRawRaster(rasterData []byte, width int, height int)
 		stdin.Close()
 		return fmt.Errorf("failed to write raster data: %v", err)
 	}
+	ep.Linefeed()
+	ep.Cut()
 	ep.End()
 
 	stdin.Close()
