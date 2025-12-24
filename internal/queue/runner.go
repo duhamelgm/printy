@@ -2,6 +2,7 @@ package queue
 
 import (
 	"context"
+	"crypto/tls"
 	"database/sql"
 	"errors"
 	"fmt"
@@ -61,6 +62,12 @@ func NewRunner() (*Runner, error) {
 		return nil, fmt.Errorf("failed to parse REDIS_URL: %w", err)
 	}
 	redisOpts = parsed
+
+	// Allow self-signed / untrusted certificates for Redis (relaxed verification).
+	if redisOpts.TLSConfig == nil {
+		redisOpts.TLSConfig = &tls.Config{}
+	}
+	redisOpts.TLSConfig.InsecureSkipVerify = true
 
 	redisClient := redis.NewClient(redisOpts)
 
