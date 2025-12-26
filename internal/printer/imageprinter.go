@@ -159,6 +159,7 @@ func (ip *ImagePrinter) PrintRawRaster(rasterData []byte, width int, height int)
 		stdin.Close()
 		return fmt.Errorf("failed to write raster data: %v", err)
 	}
+	ep.Write(fullImage)
 	ep.Linefeed()
 	ep.Cut()
 	ep.End()
