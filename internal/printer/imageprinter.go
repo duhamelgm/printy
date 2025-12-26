@@ -8,7 +8,6 @@ import (
 	"log"
 	"os"
 	"os/exec"
-	"time"
 
 	"github.com/cloudinn/escpos"
 	"github.com/cloudinn/escpos/raster"
@@ -126,52 +125,73 @@ func (ip *ImagePrinter) PrintRawRaster(rasterData []byte, width int, height int)
 		return fmt.Errorf("raster data is empty")
 	}
 
-	cmd := exec.Command("lp", "-d", ip.printerName, "-o", "raw")
-	stdin, err := cmd.StdinPipe()
-	if err != nil {
-		return fmt.Errorf("failed to create stdin pipe: %v", err)
+	bytesPerRow := (width + 7) >> 3
+	if bytesPerRow <= 0 {
+		return fmt.Errorf("invalid raster width: %d", width)
 	}
 
-	// Wrap stdin so escpos can write raw bytes
-	readWriter := &readWriterWrapper{writer: stdin}
-	ep, err := escpos.NewPrinter(readWriter)
-	if err != nil {
-		stdin.Close()
-		return fmt.Errorf("failed to create escpos printer: %v", err)
+	expectedLen := bytesPerRow * height
+	if len(rasterData) < expectedLen {
+		return fmt.Errorf("raster data too short: have %d, need %d", len(rasterData), expectedLen)
 	}
-
-	log.Printf("Starting to print raster data")
-	log.Printf("Width: %d", width)
-	log.Printf("Height: %d", height)
-
-	ep.Init()
-	ep.SetAlign("left")
 
 	densityByte := byte(0)
-	header := []byte{0x1D, 0x76, 0x30}
-	header = append(header, densityByte)
-	width = (width + 7) >> 3
-	header = append(header, intLowHigh(width, 2)...)
-	header = append(header, intLowHigh(height, 2)...)
+	headerBase := []byte{0x1D, 0x76, 0x30, densityByte}
+	headerBase = append(headerBase, intLowHigh(bytesPerRow, 2)...)
 
-	fullImage := append(header, rasterData...)
+	totalSegments := (height + 599) / 600
+	log.Printf("Printing raster in %d segment(s)", totalSegments)
 
-	if _, err := ep.Write(fullImage); err != nil {
+	for segment := 0; segment < totalSegments; segment++ {
+		segmentStartRow := segment * 600
+		segmentHeight := 600
+		if segmentStartRow+segmentHeight > height {
+			segmentHeight = height - segmentStartRow
+		}
+
+		startIdx := segmentStartRow * bytesPerRow
+		endIdx := startIdx + segmentHeight*bytesPerRow
+		if endIdx > len(rasterData) {
+			return fmt.Errorf("segment %d exceeds raster data length", segment)
+		}
+
+		cmd := exec.Command("lp", "-d", ip.printerName, "-o", "raw")
+		stdin, err := cmd.StdinPipe()
+		if err != nil {
+			return fmt.Errorf("failed to create stdin pipe for segment %d: %v", segment, err)
+		}
+
+		readWriter := &readWriterWrapper{writer: stdin}
+		ep, err := escpos.NewPrinter(readWriter)
+		if err != nil {
+			stdin.Close()
+			return fmt.Errorf("failed to create escpos printer: %v", err)
+		}
+
+		ep.Init()
+		ep.SetAlign("left")
+
+		header := append([]byte{}, headerBase...)
+		header = append(header, intLowHigh(segmentHeight, 2)...)
+
+		fullSegment := append(header, rasterData[startIdx:endIdx]...)
+
+		if _, err := ep.Write(fullSegment); err != nil {
+			stdin.Close()
+			return fmt.Errorf("failed to write raster data for segment %d: %v", segment, err)
+		}
+
+		if segment == totalSegments-1 {
+			ep.Linefeed()
+			ep.Cut()
+		}
+		ep.End()
+
 		stdin.Close()
-		return fmt.Errorf("failed to write raster data: %v", err)
-	}
-	time.Sleep(100 * time.Millisecond)
-	ep.Write(fullImage)
-	time.Sleep(100 * time.Millisecond)
-	ep.Write(fullImage)
-	ep.Linefeed()
-	ep.Cut()
-	ep.End()
 
-	stdin.Close()
-
-	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("lp command failed: %v", err)
+		if err := cmd.Run(); err != nil {
+			return fmt.Errorf("lp command failed for segment %d: %v", segment, err)
+		}
 	}
 
 	return nil
