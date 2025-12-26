@@ -8,6 +8,7 @@ import (
 	"log"
 	"os"
 	"os/exec"
+	"time"
 
 	"github.com/cloudinn/escpos"
 	"github.com/cloudinn/escpos/raster"
@@ -159,6 +160,9 @@ func (ip *ImagePrinter) PrintRawRaster(rasterData []byte, width int, height int)
 		stdin.Close()
 		return fmt.Errorf("failed to write raster data: %v", err)
 	}
+	time.Sleep(100 * time.Millisecond)
+	ep.Write(fullImage)
+	time.Sleep(100 * time.Millisecond)
 	ep.Write(fullImage)
 	ep.Linefeed()
 	ep.Cut()
