@@ -162,7 +162,7 @@ func (ip *ImagePrinter) PrintRawRaster(rasterData []byte, width int, height int)
 	}
 
 	ep.Init()
-	ep.SetAlign("center")
+	ep.SetAlign("left")
 
 	for segment := 0; segment < totalSegments; segment++ {
 		segmentStartRow := segment * 600
