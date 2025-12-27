@@ -8,6 +8,7 @@ import (
 	"log"
 	"os"
 	"os/exec"
+	"time"
 
 	"github.com/cloudinn/escpos"
 	"github.com/cloudinn/escpos/raster"
@@ -142,6 +143,27 @@ func (ip *ImagePrinter) PrintRawRaster(rasterData []byte, width int, height int)
 	totalSegments := (height + 599) / 600
 	log.Printf("Printing raster in %d segment(s)", totalSegments)
 
+	cmd := exec.Command("lp", "-d", ip.printerName, "-o", "raw")
+	stdin, err := cmd.StdinPipe()
+	if err != nil {
+		return fmt.Errorf("failed to create stdin pipe: %v", err)
+	}
+
+	if err := cmd.Start(); err != nil {
+		stdin.Close()
+		return fmt.Errorf("failed to start lp command: %v", err)
+	}
+
+	readWriter := &readWriterWrapper{writer: stdin}
+	ep, err := escpos.NewPrinter(readWriter)
+	if err != nil {
+		stdin.Close()
+		return fmt.Errorf("failed to create escpos printer: %v", err)
+	}
+
+	ep.Init()
+	ep.SetAlign("center")
+
 	for segment := 0; segment < totalSegments; segment++ {
 		segmentStartRow := segment * 600
 		segmentHeight := 600
@@ -152,28 +174,12 @@ func (ip *ImagePrinter) PrintRawRaster(rasterData []byte, width int, height int)
 		startIdx := segmentStartRow * bytesPerRow
 		endIdx := startIdx + segmentHeight*bytesPerRow
 		if endIdx > len(rasterData) {
+			stdin.Close()
 			return fmt.Errorf("segment %d exceeds raster data length", segment)
 		}
 
-		cmd := exec.Command("lp", "-d", ip.printerName, "-o", "raw")
-		stdin, err := cmd.StdinPipe()
-		if err != nil {
-			return fmt.Errorf("failed to create stdin pipe for segment %d: %v", segment, err)
-		}
-
-		readWriter := &readWriterWrapper{writer: stdin}
-		ep, err := escpos.NewPrinter(readWriter)
-		if err != nil {
-			stdin.Close()
-			return fmt.Errorf("failed to create escpos printer: %v", err)
-		}
-
-		ep.Init()
-		ep.SetAlign("left")
-
 		header := append([]byte{}, headerBase...)
 		header = append(header, intLowHigh(segmentHeight, 2)...)
-
 		fullSegment := append(header, rasterData[startIdx:endIdx]...)
 
 		if _, err := ep.Write(fullSegment); err != nil {
@@ -181,17 +187,19 @@ func (ip *ImagePrinter) PrintRawRaster(rasterData []byte, width int, height int)
 			return fmt.Errorf("failed to write raster data for segment %d: %v", segment, err)
 		}
 
-		if segment == totalSegments-1 {
-			ep.Linefeed()
-			ep.Cut()
+		if segment < totalSegments-1 {
+			time.Sleep(100 * time.Millisecond)
 		}
-		ep.End()
+	}
 
-		stdin.Close()
+	ep.Linefeed()
+	ep.Cut()
+	ep.End()
 
-		if err := cmd.Run(); err != nil {
-			return fmt.Errorf("lp command failed for segment %d: %v", segment, err)
-		}
+	stdin.Close()
+
+	if err := cmd.Wait(); err != nil {
+		return fmt.Errorf("lp command failed: %v", err)
 	}
 
 	return nil
